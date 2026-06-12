@@ -1,7 +1,13 @@
 from abc import ABC
-from typing import Literal
+from typing import Literal, cast
 
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
+from langchain_core.messages import (
+    AIMessage,
+    BaseMessage,
+    HumanMessage,
+    SystemMessage,
+    ToolMessage,
+)
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import Runnable
@@ -141,7 +147,10 @@ class DebaterAgent(BaseAgent):
     def _coerce_ai_message(response: BaseMessage) -> AIMessage:
         if isinstance(response, AIMessage):
             return response
-        return AIMessage(content=str(response.content))
+        content = cast(object, getattr(response, "content", ""))
+        if isinstance(content, str):
+            return AIMessage(content=content)
+        return AIMessage(content=str(content))
 
     def _ensure_prompt_messages(
         self,
@@ -172,7 +181,7 @@ class DebaterAgent(BaseAgent):
     ) -> tuple[list[BaseMessage], AIMessage]:
         model = load_model()
         if wikipedia_turn is None or wikipedia_turn == turn:
-            model = model.bind_tools(WIKIPEDIA_TOOLS)
+            model = model.bind_tools(WIKIPEDIA_TOOLS)  # pyright: ignore[reportUnknownMemberType]
         if first_call:
             messages = self.build_turn_messages(
                 topic,

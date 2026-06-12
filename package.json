@@ -13,6 +13,7 @@
     "deploy:frontend": "bash scripts/deploy-frontend.sh",
     "dev:api": "cd app/DebateAgent && uv run uvicorn api.server:app --reload --port 8000",
     "typecheck:python": "cd app/DebateAgent && uv run pyright",
+    "lint:frontend": "pnpm --filter frontend lint",
     "lint:python": "cd app/DebateAgent && uv run ruff check .",
     "format:python": "cd app/DebateAgent && uv run ruff format .",
     "format:python:check": "cd app/DebateAgent && uv run ruff format --check ."

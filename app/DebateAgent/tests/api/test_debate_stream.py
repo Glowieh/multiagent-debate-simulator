@@ -75,17 +75,22 @@ async def test_stream_stops_without_completion_on_client_disconnect(
         async def astream_events(
             self, *args: object, **kwargs: object
         ) -> AsyncIterator[dict[str, object]]:
-            yield {
-                "event": "on_chain_start",
-                "name": "debater_red_agent",
-                "metadata": {},
-                "data": {"input": {"turn_red": 0, "turn_green": 0, "turn_messages": []}},
+            empty_turn_state: dict[str, int | list[object]] = {
+                "turn_red": 0,
+                "turn_green": 0,
+                "turn_messages": [],
             }
             yield {
                 "event": "on_chain_start",
                 "name": "debater_red_agent",
                 "metadata": {},
-                "data": {"input": {"turn_red": 0, "turn_green": 0, "turn_messages": []}},
+                "data": {"input": empty_turn_state},
+            }
+            yield {
+                "event": "on_chain_start",
+                "name": "debater_red_agent",
+                "metadata": {},
+                "data": {"input": empty_turn_state},
             }
 
     disconnect_checks = 0

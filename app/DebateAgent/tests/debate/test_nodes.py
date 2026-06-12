@@ -5,8 +5,11 @@ from langchain_core.messages import AIMessage, RemoveMessage
 from langgraph.graph.message import REMOVE_ALL_MESSAGES
 
 from debate.initial_state import build_initial_state
-from debate.nodes.debater_green import debater_green_agent_node, debater_green_finish_node
+from debate.nodes.debater_green import (
+    debater_green_agent_node,
+)
 from debate.nodes.debater_red import debater_red_agent_node, debater_red_finish_node
+from debate.nodes.message_utils import message_text
 from debate.nodes.summarizer import summarizer_node
 from debate.state import DebateState
 
@@ -56,12 +59,14 @@ def test_debater_red_agent_node_seeds_turn_messages(
 
     update = debater_red_agent_node(state)
 
-    assert update["active_speaker"] == "Red"
-    assert update["tool_loop_count"] == 0
-    assert len(update["turn_messages"]) == 1
-    message = update["turn_messages"][0]
+    assert update.get("active_speaker") == "Red"
+    assert update.get("tool_loop_count") == 0
+    turn_messages = update.get("turn_messages")
+    assert turn_messages is not None
+    assert len(turn_messages) == 1
+    message = turn_messages[0]
     assert isinstance(message, AIMessage)
-    assert message.content == "agent response"
+    assert message_text(message) == "agent response"
     assert red.calls == [
         {
             "turn_messages": [],
@@ -90,17 +95,21 @@ def test_debater_red_finish_node_commits_message_and_clears_turn_state(
 
     update = debater_red_finish_node(state)
 
-    assert update["turn_red"] == 1
-    assert len(update["turn_messages"]) == 1
-    assert isinstance(update["turn_messages"][0], RemoveMessage)
-    assert update["turn_messages"][0].id == REMOVE_ALL_MESSAGES
-    assert update["tool_loop_count"] == 0
-    assert update["pending_tool_query"] is None
-    assert update["active_speaker"] is None
-    message = update["messages"][0]
+    assert update.get("turn_red") == 1
+    cleared_turn_messages = update.get("turn_messages")
+    assert cleared_turn_messages is not None
+    assert len(cleared_turn_messages) == 1
+    assert isinstance(cleared_turn_messages[0], RemoveMessage)
+    assert cleared_turn_messages[0].id == REMOVE_ALL_MESSAGES
+    assert update.get("tool_loop_count") == 0
+    assert update.get("pending_tool_query") is None
+    assert update.get("active_speaker") is None
+    messages = update.get("messages")
+    assert messages is not None
+    message = messages[0]
     assert isinstance(message, AIMessage)
     assert message.name == "Red"
-    assert message.content == "final turn text"
+    assert message_text(message) == "final turn text"
 
 
 def test_debater_green_agent_node_uses_rebuttal_on_first_turn(
@@ -115,7 +124,7 @@ def test_debater_green_agent_node_uses_rebuttal_on_first_turn(
 
     update = debater_green_agent_node(state)
 
-    assert update["active_speaker"] == "Green"
+    assert update.get("active_speaker") == "Green"
     assert green.calls == [
         {
             "turn_messages": [],
@@ -145,8 +154,8 @@ def test_debater_red_agent_node_sets_wikipedia_turn_on_first_tool_call(
 
     update = debater_red_agent_node(build_initial_state("Test topic"))
 
-    assert update["pending_tool_query"] == "climate change"
-    assert update["wikipedia_turn_red"] == 1
+    assert update.get("pending_tool_query") == "climate change"
+    assert update.get("wikipedia_turn_red") == 1
 
 
 def test_debater_red_agent_node_passes_wikipedia_turn_to_invoke(
@@ -184,7 +193,7 @@ def test_debater_red_agent_node_sets_pending_tool_query_for_tool_calls(
 
     update = debater_red_agent_node(state)
 
-    assert update["pending_tool_query"] == "climate change"
+    assert update.get("pending_tool_query") == "climate change"
     assert "wikipedia_turn_red" not in update
 
 
@@ -201,7 +210,7 @@ def test_debater_red_agent_node_increments_tool_loop_on_reentry(
 
     update = debater_red_agent_node(state)
 
-    assert update["tool_loop_count"] == 2
+    assert update.get("tool_loop_count") == 2
 
 
 def test_summarizer_node_sets_completed_phase(
@@ -220,8 +229,10 @@ def test_summarizer_node_sets_completed_phase(
 
     update = summarizer_node(state)
 
-    assert update["phase"] == "completed"
-    message = update["messages"][0]
+    assert update.get("phase") == "completed"
+    messages = update.get("messages")
+    assert messages is not None
+    message = messages[0]
     assert isinstance(message, AIMessage)
     assert message.name == "Summarizer"
     assert summarizer.respond_calls == [

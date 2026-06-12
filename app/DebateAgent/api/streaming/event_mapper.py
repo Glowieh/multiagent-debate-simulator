@@ -4,6 +4,7 @@ Message ``name`` fields use ``"Red"``, ``"Green"``, ``"Summarizer"``.
 Stream events use lowercase ``"summarizer"`` to match the frontend Speaker type.
 """
 
+from collections.abc import Mapping
 from typing import Any, Literal, cast
 
 from langchain_core.messages import AIMessage
@@ -38,7 +39,9 @@ def _speaker_for_node(node: str) -> Speaker | None:
     return None
 
 
-def _debater_agent_node(node: str) -> Literal["debater_red_agent", "debater_green_agent"] | None:
+def _debater_agent_node(
+    node: str,
+) -> Literal["debater_red_agent", "debater_green_agent"] | None:
     if node == "debater_red_agent":
         return "debater_red_agent"
     if node == "debater_green_agent":
@@ -90,10 +93,11 @@ def _state_from_data(data: dict[str, Any]) -> dict[str, Any]:
     return {}
 
 
-def _extract_query_from_tool_call(tool_call: dict[str, Any]) -> str:
+def _extract_query_from_tool_call(tool_call: Mapping[str, Any]) -> str:
     args = tool_call.get("args", {})
     if isinstance(args, dict):
-        query = args.get("query")
+        args_dict = cast(dict[str, Any], args)
+        query = args_dict.get("query")
         if query is not None:
             return str(query)
     return ""
@@ -102,10 +106,11 @@ def _extract_query_from_tool_call(tool_call: dict[str, Any]) -> str:
 def _extract_wikipedia_queries(state: dict[str, Any]) -> list[str]:
     turn_messages = state.get("turn_messages", [])
     if isinstance(turn_messages, list):
-        for message in reversed(turn_messages):
+        message_list = cast(list[object], turn_messages)
+        for message in reversed(message_list):
             if isinstance(message, AIMessage) and message.tool_calls:
                 queries = [
-                    _extract_query_from_tool_call(cast(dict[str, Any], tool_call))
+                    _extract_query_from_tool_call(tool_call)
                     for tool_call in message.tool_calls
                 ]
                 if queries:
@@ -114,9 +119,12 @@ def _extract_wikipedia_queries(state: dict[str, Any]) -> list[str]:
                 message_dict = cast(dict[str, Any], message)
                 tool_calls = message_dict.get("tool_calls")
                 if tool_calls and isinstance(tool_calls, list):
+                    tool_call_list = cast(list[object], tool_calls)
                     queries = [
-                        _extract_query_from_tool_call(cast(dict[str, Any], tool_call))
-                        for tool_call in tool_calls
+                        _extract_query_from_tool_call(
+                            cast(Mapping[str, Any], tool_call)
+                        )
+                        for tool_call in tool_call_list
                     ]
                     if queries:
                         return queries

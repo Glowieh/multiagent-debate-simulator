@@ -28,7 +28,7 @@ def test_wikipedia_search_returns_summary(monkeypatch: pytest.MonkeyPatch) -> No
         lambda: client,
     )
 
-    result = wikipedia_search.invoke({"query": "renewable energy"})
+    result = wikipedia_search.invoke({"query": "renewable energy"})  # pyright: ignore[reportUnknownMemberType]
 
     assert "Renewable energy" in result
     assert "natural sources" in result
@@ -45,7 +45,7 @@ def test_wikipedia_search_handles_missing_page(monkeypatch: pytest.MonkeyPatch) 
         lambda: client,
     )
 
-    result = wikipedia_search.invoke({"query": "nonexistent topic xyz"})
+    result = wikipedia_search.invoke({"query": "nonexistent topic xyz"})  # pyright: ignore[reportUnknownMemberType]
 
     assert "No Wikipedia page found" in result
 
@@ -67,7 +67,7 @@ def test_wikipedia_search_truncates_long_summary(
         lambda: client,
     )
 
-    result = wikipedia_search.invoke({"query": "long article"})
+    result = wikipedia_search.invoke({"query": "long article"})  # pyright: ignore[reportUnknownMemberType]
 
     assert len(result) < len(page.summary) + 20
     assert result.endswith("…")
@@ -83,6 +83,6 @@ def test_wikipedia_search_handles_rate_limit(monkeypatch: pytest.MonkeyPatch) ->
         lambda: client,
     )
 
-    result = wikipedia_search.invoke({"query": "renewable energy"})
+    result = wikipedia_search.invoke({"query": "renewable energy"})  # pyright: ignore[reportUnknownMemberType]
 
     assert result == "Wikipedia rate limit exceeded; try again later."

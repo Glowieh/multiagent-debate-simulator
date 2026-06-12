@@ -51,8 +51,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint
-        run: pnpm --filter frontend lint
+      - name: ESLint
+        run: pnpm lint:frontend
 
       - name: Build
         run: pnpm --filter frontend build

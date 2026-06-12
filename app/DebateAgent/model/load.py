@@ -23,3 +23,8 @@ def load_model() -> BaseChatModel:
     if _model is None:
         _model = _create_model(get_settings())
     return _model
+
+
+def reset_model_cache() -> None:
+    global _model
+    _model = None

@@ -1,3 +1,5 @@
+from collections.abc import Iterator
+
 import pytest
 from langchain_core.language_models.fake_chat_models import FakeListChatModel
 
@@ -18,16 +20,12 @@ class ToolAwareFakeListChatModel(FakeListChatModel):
 
 
 @pytest.fixture(autouse=True)
-def reset_instances() -> None:
-    instances._debater_red = None
-    instances._debater_green = None
-    instances._summarizer = None
-    load_module._model = None
+def reset_instances() -> Iterator[None]:
+    instances.reset_cached_instances()
+    load_module.reset_model_cache()
     yield
-    instances._debater_red = None
-    instances._debater_green = None
-    instances._summarizer = None
-    load_module._model = None
+    instances.reset_cached_instances()
+    load_module.reset_model_cache()
 
 
 def test_get_debater_red_returns_same_instance() -> None:

@@ -1,5 +1,5 @@
 import wikipediaapi
-from langchain_core.tools import tool
+from langchain_core.tools import tool  # pyright: ignore[reportUnknownVariableType]
 from wikipediaapi import WikipediaException, WikiRateLimitError
 
 from debate.settings import get_settings
@@ -22,7 +22,7 @@ def get_wikipedia_client() -> wikipediaapi.Wikipedia:
     return _wiki_client
 
 
-@tool
+@tool  # pyright: ignore[reportUnknownVariableType]
 def wikipedia_search(query: str) -> str:
     """Search Wikipedia for factual information about a topic."""
     try:

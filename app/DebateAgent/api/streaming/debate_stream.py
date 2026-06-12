@@ -50,7 +50,9 @@ async def debate_event_generator(
             event_id += 1
             yield _to_sse(debate_event, event_id)
     finally:
-        await stream.aclose()
+        close = getattr(stream, "aclose", None)
+        if close is not None:
+            await close()
 
     if completed_normally:
         for debate_event in mapper.completion_events():

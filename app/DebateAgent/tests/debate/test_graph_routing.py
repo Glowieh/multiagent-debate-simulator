@@ -1,12 +1,12 @@
 from functools import partial
 from typing import Literal
 
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, BaseMessage
 
 from debate.graph import (
-    _route_after_agent,
-    _route_after_finish,
-    _route_after_tool,
+    _route_after_agent,  # pyright: ignore[reportPrivateUsage]
+    _route_after_finish,  # pyright: ignore[reportPrivateUsage]
+    _route_after_tool,  # pyright: ignore[reportPrivateUsage]
     build_debate_graph,
 )
 from debate.initial_state import build_initial_state
@@ -18,13 +18,13 @@ def _state(
     turn_green: int = 0,
     topic: str = "Test topic",
     *,
-    turn_messages: list | None = None,
+    turn_messages: list[BaseMessage] | None = None,
     active_speaker: Literal["Red", "Green"] | None = None,
     tool_loop_count: int = 0,
     wikipedia_turn_red: int | None = None,
     wikipedia_turn_green: int | None = None,
 ) -> DebateState:
-    state = {
+    state: DebateState = {
         **build_initial_state(topic),
         "turn_red": turn_red,
         "turn_green": turn_green,
@@ -126,7 +126,7 @@ def test_route_to_summarizer_when_both_debaters_finished() -> None:
 
 def test_graph_invoke_produces_seven_ai_messages() -> None:
     graph = build_debate_graph()
-    result = graph.invoke(build_initial_state("Should AI replace teachers?"))
+    result = graph.invoke(build_initial_state("Should AI replace teachers?"))  # pyright: ignore[reportUnknownMemberType]
 
     assert result["turn_red"] == 3
     assert result["turn_green"] == 3
