@@ -10,6 +10,7 @@
     "agentcore:invoke": "agentcore invoke",
     "agentcore:validate": "agentcore validate",
     "dev:frontend": "pnpm --filter frontend dev",
+    "deploy:frontend": "bash scripts/deploy-frontend.sh",
     "dev:api": "cd app/DebateAgent && uv run uvicorn api.server:app --reload --port 8000",
     "typecheck:python": "cd app/DebateAgent && uv run pyright",
     "lint:python": "cd app/DebateAgent && uv run ruff check .",

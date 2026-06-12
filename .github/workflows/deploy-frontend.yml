@@ -1,0 +1,62 @@
+# Deploy frontend static assets to S3 + CloudFront on push to production.
+#
+# One-time AWS setup (outside this repo):
+# 1. Apply terraform/frontend/ to provision S3 + CloudFront.
+# 2. Add GitHub OIDC identity provider (if missing):
+#    - URL: https://token.actions.githubusercontent.com
+#    - Audience: sts.amazonaws.com
+# 3. Create IAM role (e.g. github-actions-frontend-deploy) with OIDC trust for
+#    repo:Glowieh/multiagent-debate-simulator:ref:refs/heads/production
+# 4. Attach permissions: s3:ListBucket/GetObject/PutObject/DeleteObject on the
+#    frontend bucket, cloudfront:CreateInvalidation on the distribution.
+#
+# GitHub repository configuration (Settings → Secrets and variables → Actions):
+#   Secrets:
+#     AWS_ROLE_ARN                          — IAM role ARN for OIDC
+#     FRONTEND_S3_BUCKET                    — terraform output frontend_bucket_name
+#     FRONTEND_CLOUDFRONT_DISTRIBUTION_ID   — terraform output frontend_cloudfront_distribution_id
+#   Variables:
+#     AWS_REGION                            — e.g. eu-west-1
+#     VITE_API_BASE_URL                     — production API base URL for Vite build
+
+name: Deploy frontend
+
+on:
+  push:
+    branches: [production]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to S3 / CloudFront
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION || 'eu-west-1' }}
+      FRONTEND_S3_BUCKET: ${{ secrets.FRONTEND_S3_BUCKET }}
+      FRONTEND_CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.FRONTEND_CLOUDFRONT_DISTRIBUTION_ID }}
+      VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.2
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'eu-west-1' }}
+
+      - name: Deploy frontend
+        run: pnpm deploy:frontend
