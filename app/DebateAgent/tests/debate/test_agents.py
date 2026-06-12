@@ -85,13 +85,22 @@ def test_debater_red_build_turn_messages_uses_opening_template() -> None:
     assert "opening statement" in str(messages[1].content)
 
 
-def test_debater_red_build_turn_messages_appends_wikipedia_available_instruction() -> None:
+def test_debater_red_build_turn_messages_appends_wikipedia_turn_one_instruction() -> None:
+    agent = DebaterRed()
+    messages = agent.build_turn_messages(
+        "Topic", "Context", turn=1, is_opening=True
+    )
+
+    assert "must call wikipedia_search on either this turn" in str(messages[1].content)
+
+
+def test_debater_red_build_turn_messages_appends_wikipedia_turn_two_must_use() -> None:
     agent = DebaterRed()
     messages = agent.build_turn_messages(
         "Topic", "Context", turn=2, is_opening=False
     )
 
-    assert "save your Wikipedia lookup for a later turn" in str(messages[1].content)
+    assert "You must call wikipedia_search this turn" in str(messages[1].content)
 
 
 def test_debater_red_build_turn_messages_appends_wikipedia_exhausted_instruction() -> None:

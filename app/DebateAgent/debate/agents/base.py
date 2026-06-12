@@ -65,9 +65,19 @@ class DebaterAgent(BaseAgent):
         "Do not repeat your opening verbatim. "
         "Reply in exactly 3 brief paragraphs."
     )
-    _wikipedia_available_instruction: str = (
-        "\n\nYou may call wikipedia_search up to 3 times this turn, "
-        "or save your Wikipedia lookup for a later turn."
+    _wikipedia_turn_one_instruction: str = (
+        "\n\nYou must call wikipedia_search on either this turn (turn 1) or turn 2 — "
+        "not turn 3. If you want facts now, call wikipedia_search up to 3 times "
+        "before your final reply. If you defer, you must use it on turn 2."
+    )
+    _wikipedia_turn_two_must_use_instruction: str = (
+        "\n\nYou have not used Wikipedia yet. "
+        "You must call wikipedia_search this turn (up to 3 times) "
+        "before your final reply."
+    )
+    _wikipedia_turn_three_missed_instruction: str = (
+        "\n\nYou should have used Wikipedia on turn 1 or 2. "
+        "Do not call wikipedia_search; argue from the transcript."
     )
     _wikipedia_exhausted_instruction: str = (
         "\n\nYou have already used your Wikipedia lookup. "
@@ -91,11 +101,15 @@ class DebaterAgent(BaseAgent):
     def _wikipedia_instruction(
         self, turn: int, wikipedia_turn: int | None
     ) -> str:
-        if wikipedia_turn is None:
-            return self._wikipedia_available_instruction
-        if wikipedia_turn < turn:
-            return self._wikipedia_exhausted_instruction
-        return ""
+        if wikipedia_turn is not None:
+            if wikipedia_turn < turn:
+                return self._wikipedia_exhausted_instruction
+            return ""
+        if turn == 1:
+            return self._wikipedia_turn_one_instruction
+        if turn == 2:
+            return self._wikipedia_turn_two_must_use_instruction
+        return self._wikipedia_turn_three_missed_instruction
 
     def build_turn_messages(
         self,

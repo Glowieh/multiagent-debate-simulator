@@ -22,7 +22,7 @@ dependencies = [
     "uvicorn[standard]",
     "pydantic-settings",
     "python-dotenv",
-    "wikipedia",
+    "Wikipedia-API",
 ]
 
 [dependency-groups]
