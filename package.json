@@ -1,0 +1,22 @@
+{
+  "name": "langgraph-demo",
+  "private": true,
+  "packageManager": "pnpm@10.28.2",
+  "scripts": {
+    "agentcore": "agentcore",
+    "agentcore:create": "agentcore create",
+    "agentcore:dev": "AGENTCORE_SKIP_INSTALL=1 agentcore dev",
+    "agentcore:deploy": "agentcore deploy",
+    "agentcore:invoke": "agentcore invoke",
+    "agentcore:validate": "agentcore validate",
+    "dev:frontend": "pnpm --filter frontend dev",
+    "dev:api": "cd app/DebateAgent && uv run uvicorn api.server:app --reload --port 8000",
+    "typecheck:python": "cd app/DebateAgent && uv run pyright",
+    "lint:python": "cd app/DebateAgent && uv run ruff check .",
+    "format:python": "cd app/DebateAgent && uv run ruff format .",
+    "format:python:check": "cd app/DebateAgent && uv run ruff format --check ."
+  },
+  "devDependencies": {
+    "@aws/agentcore": "^0.19.0"
+  }
+}

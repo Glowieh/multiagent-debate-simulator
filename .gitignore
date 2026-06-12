@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+agentcore/.env.local
+
+# AgentCore CLI state
+agentcore/.cli/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
