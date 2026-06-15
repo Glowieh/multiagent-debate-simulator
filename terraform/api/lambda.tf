@@ -5,6 +5,8 @@ locals {
 resource "null_resource" "build_api_proxy" {
   triggers = {
     auth_hash   = filemd5("${path.module}/../../lambda/api-proxy/auth_handler.py")
+    auth_py     = filemd5("${path.module}/../../lambda/api-proxy/auth.py")
+    cors_py     = filemd5("${path.module}/../../lambda/api-proxy/cors.py")
     stream_hash = filemd5("${path.module}/../../lambda/api-proxy/stream_app.py")
     auth_reqs   = filemd5("${path.module}/../../lambda/api-proxy/requirements-auth.txt")
     stream_reqs = filemd5("${path.module}/../../lambda/api-proxy/requirements-stream.txt")
@@ -54,7 +56,8 @@ resource "aws_lambda_function" "auth" {
 
   environment {
     variables = {
-      AUTH_SECRET_ARN = aws_secretsmanager_secret.demo_auth.arn
+      AUTH_SECRET_ARN     = aws_secretsmanager_secret.demo_auth.arn
+      CORS_ALLOWED_ORIGIN = local.cors_origin
     }
   }
 }
@@ -79,6 +82,7 @@ resource "aws_lambda_function" "stream" {
       AGENT_RUNTIME_ARN       = var.agent_runtime_arn
       AWS_LAMBDA_EXEC_WRAPPER = "/opt/bootstrap"
       AWS_LWA_INVOKE_MODE     = "response_stream"
+      CORS_ALLOWED_ORIGIN     = local.cors_origin
       PORT                    = "8080"
     }
   }

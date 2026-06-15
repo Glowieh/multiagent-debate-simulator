@@ -97,6 +97,8 @@ A 3-turn debate loop runs two debater agents against each other, then a summariz
 
 ## Production deployment
 
+Operational steps: see [deployment-checklist.md](deployment-checklist.md).
+
 Production splits the stack into three AWS layers:
 
 1. **AgentCore runtime** — runs `main.py` and streams debate events from the LangGraph agent via Bedrock.
@@ -110,7 +112,7 @@ Deploy in this order (each step produces values needed by the next):
 - AWS CLI v2 and [Terraform](https://www.terraform.io/) ≥ 1.5
 - AWS credentials with Bedrock, AgentCore, Lambda, API Gateway, S3, CloudFront, and Secrets Manager access
 - `pnpm install` and `cd app/DebateAgent && uv sync` (same as local setup)
-- Bedrock model access for the model in `.env.example` (`BEDROCK_MODEL_ID`)
+- Bedrock model access for **Amazon Nova Micro** (`eu.amazon.nova-micro-v1:0` in `.env.example`)
 
 ### 1. Deploy AgentCore runtime
 

@@ -26,3 +26,6 @@ agentcore/.cli/
 
 # OS
 .DS_Store
+
+# Misc
+deployment-checklist.md

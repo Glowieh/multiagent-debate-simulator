@@ -9,6 +9,7 @@ from typing import Any
 
 import jwt
 
+from cors import cors_headers
 from secrets_module import get_auth_secrets
 
 JWT_ALGORITHM = "HS256"
@@ -16,10 +17,14 @@ JWT_SUBJECT = "demo"
 JWT_TTL_SECONDS = 86_400
 
 
+def _json_headers() -> dict[str, str]:
+    return {"Content-Type": "application/json", **cors_headers()}
+
+
 def _unauthorized() -> dict[str, Any]:
     return {
         "statusCode": 401,
-        "headers": {"Content-Type": "application/json"},
+        "headers": _json_headers(),
         "body": json.dumps({"error": "Invalid credentials"}),
     }
 
@@ -49,7 +54,7 @@ def login_response(body: str) -> dict[str, Any]:
 
     return {
         "statusCode": 200,
-        "headers": {"Content-Type": "application/json"},
+        "headers": _json_headers(),
         "body": json.dumps({"accessToken": token, "expiresIn": JWT_TTL_SECONDS}),
     }
 
@@ -83,7 +88,7 @@ def verify_access_token(token: str | None) -> bool:
 def api_gateway_json_response(status_code: int, body: dict[str, Any]) -> dict[str, Any]:
     return {
         "statusCode": status_code,
-        "headers": {"Content-Type": "application/json"},
+        "headers": _json_headers(),
         "body": json.dumps(body),
     }
 

@@ -7,8 +7,9 @@ import {
   type AgentCoreMcpSpec,
   type CustomJWTAuthorizerConfig,
 } from '@aws/agentcore-cdk';
-import { CfnOutput, Stack, type StackProps } from 'aws-cdk-lib';
+import { CfnOutput, SecretValue, Stack, type StackProps } from 'aws-cdk-lib';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 
 export interface HarnessConfig {
@@ -233,6 +234,30 @@ export class AgentCoreStack extends Stack {
           value: manager.resourceRetrievalRoleArn,
         });
       }
+    }
+
+    // LangSmith API key via Secrets Manager (injected at deploy; key set by operator post-deploy)
+    for (const env of this.application.environments.values()) {
+      const envId = toCdkId(env.agent.name);
+      const secret = new secretsmanager.Secret(this, `LangSmithSecret${envId}`, {
+        secretName: `${spec.name}/${env.agent.name}/langsmith-api-key`,
+        secretStringValue: SecretValue.unsafePlainText(JSON.stringify({ api_key: 'REPLACE_ME' })),
+        description: `LangSmith API key for ${env.agent.name} tracing`,
+      });
+
+      env.runtime.addEnvironmentVariable('LANGSMITH_SECRET_ARN', secret.secretArn);
+
+      env.runtime.role.addToPrincipalPolicy(
+        new iam.PolicyStatement({
+          actions: ['secretsmanager:GetSecretValue'],
+          resources: [secret.secretArn],
+        })
+      );
+
+      new CfnOutput(this, `LangSmithSecretArn${envId}`, {
+        value: secret.secretArn,
+        description: `LangSmith API key secret ARN for ${env.agent.name}`,
+      });
     }
 
     // Stack-level output

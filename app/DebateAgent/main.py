@@ -3,6 +3,9 @@ from typing import Any
 from bedrock_agentcore.runtime import BedrockAgentCoreApp, RequestContext
 
 from api.streaming.debate_stream import iter_debate_events
+from runtime_env import configure_runtime_env
+
+configure_runtime_env()
 
 app = BedrockAgentCoreApp()
 log = app.logger

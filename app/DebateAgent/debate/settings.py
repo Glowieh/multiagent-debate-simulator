@@ -14,7 +14,7 @@ class DebateSettings(BaseSettings):
     use_local_llm: bool = False
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "qwen2.5:3b"
-    bedrock_model_id: str = "global.anthropic.claude-sonnet-4-5-20250929-v1:0"
+    bedrock_model_id: str = "eu.amazon.nova-micro-v1:0"
     max_turns_per_debater: int = Field(default=3, ge=1)
     max_tool_loops: int = Field(default=3, ge=1)
     wikipedia_user_agent: str = (

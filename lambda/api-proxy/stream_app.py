@@ -15,6 +15,7 @@ from starlette.responses import JSONResponse, StreamingResponse
 from starlette.routing import Route
 
 from auth import extract_bearer_token, required_env, verify_access_token
+from cors import cors_headers
 
 
 def _agentcore_client() -> Any:
@@ -46,16 +47,28 @@ def _iter_agentcore_sse(topic: str) -> Iterator[bytes]:
 async def stream_debate(request: Request) -> StreamingResponse | JSONResponse:
     token = extract_bearer_token(request.headers.get("authorization"))
     if not verify_access_token(token):
-        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+        return JSONResponse(
+            {"error": "Unauthorized"},
+            status_code=401,
+            headers=cors_headers(),
+        )
 
     try:
         body = await request.json()
     except json.JSONDecodeError:
-        return JSONResponse({"error": "Invalid JSON"}, status_code=400)
+        return JSONResponse(
+            {"error": "Invalid JSON"},
+            status_code=400,
+            headers=cors_headers(),
+        )
 
     topic = body.get("topic") if isinstance(body, dict) else None
     if not isinstance(topic, str) or not topic.strip():
-        return JSONResponse({"error": "Topic cannot be empty"}, status_code=400)
+        return JSONResponse(
+            {"error": "Topic cannot be empty"},
+            status_code=400,
+            headers=cors_headers(),
+        )
 
     async def event_stream() -> AsyncIterator[bytes]:
         for chunk in _iter_agentcore_sse(topic.strip()):
@@ -67,6 +80,7 @@ async def stream_debate(request: Request) -> StreamingResponse | JSONResponse:
         headers={
             "Cache-Control": "no-cache",
             "X-Accel-Buffering": "no",
+            **cors_headers(),
         },
     )
 
