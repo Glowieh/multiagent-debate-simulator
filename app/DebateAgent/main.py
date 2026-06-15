@@ -2,30 +2,23 @@ from typing import Any
 
 from bedrock_agentcore.runtime import BedrockAgentCoreApp, RequestContext
 
-from debate.graph import get_graph
-from debate.initial_state import build_initial_state
+from api.streaming.debate_stream import iter_debate_events
 
 app = BedrockAgentCoreApp()
 log = app.logger
 
 
 @app.entrypoint  # pyright: ignore[reportUnknownMemberType]
-async def invoke(payload: dict[str, Any], context: RequestContext) -> dict[str, Any]:
-    log.info("Invoking debate agent")
+async def invoke(payload: dict[str, Any], _context: RequestContext):
+    log.info("Invoking debate agent (streaming)")
 
     topic = payload.get("topic") or payload.get("prompt", "")
-    if not topic.strip():
-        return {"error": "Topic cannot be empty"}
+    if not isinstance(topic, str) or not topic.strip():
+        yield {"type": "error", "message": "Topic cannot be empty"}
+        return
 
-    graph = get_graph()
-    result = await graph.ainvoke(build_initial_state(topic))  # pyright: ignore[reportUnknownMemberType]
-
-    last_message = result["messages"][-1]
-    output = (
-        last_message.content if hasattr(last_message, "content") else str(last_message)
-    )
-    log.info("Debate agent output: %s", output)
-    return {"result": output, "topic": topic}
+    async for event in iter_debate_events(topic.strip()):
+        yield event.model_dump()
 
 
 if __name__ == "__main__":

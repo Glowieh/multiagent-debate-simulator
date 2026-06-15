@@ -20,7 +20,7 @@ The debate is streamed to a simple React frontend as it happens.
 - pnpm for all React / Node related things, never use npm (pnpm is installed on the machine)
 - Pyright for typing. Always use typing in Python and Typescript.
 - Ruff for linting / formatting in Python
-- Ollama llama3.2 for local development and testing purposes
+- Ollama qwen2.5:3b for local development and testing purposes
 
 # Architecture
 

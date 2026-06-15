@@ -1,0 +1,11 @@
+aws_region   = "eu-west-1"
+project_name = "langgraph-debate"
+environment  = "dev"
+
+# From agentcore deploy output
+agent_runtime_arn = "arn:aws:bedrock-agentcore:eu-west-1:123456789012:runtime/your-runtime-id"
+
+# From terraform/frontend output frontend_url
+cors_allowed_origins = ["https://dxxxxxxxxxxxxx.cloudfront.net"]
+
+# demo_password: set via TF_VAR_demo_password on apply, not in this file

@@ -1,6 +1,14 @@
 import { fetchEventSource } from "@microsoft/fetch-event-source";
+import { clearAccessToken, getAccessToken } from "./auth";
 import { resolveApiUrl } from "./config";
 import type { DebateEvent } from "../types/debate";
+
+export class UnauthorizedError extends Error {
+  constructor(message = "Unauthorized") {
+    super(message);
+    this.name = "UnauthorizedError";
+  }
+}
 
 export async function streamDebate(
   topic: string,
@@ -8,14 +16,23 @@ export async function streamDebate(
   signal?: AbortSignal,
 ): Promise<void> {
   let receivedAnyEvent = false;
+  const token = getAccessToken();
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
 
   await fetchEventSource(resolveApiUrl("/api/debate/stream"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify({ topic }),
     signal,
     openWhenHidden: true,
     async onopen(response) {
+      if (response.status === 401) {
+        clearAccessToken();
+        throw new UnauthorizedError();
+      }
       if (!response.ok) {
         throw new Error(`Stream request failed: ${response.status}`);
       }
