@@ -135,6 +135,10 @@ export function speakerClass(speaker: Speaker): string {
       return "debater-green";
     case "summarizer":
       return "debate-summary";
+    default: {
+      const _exhaustive: never = speaker;
+      return _exhaustive;
+    }
   }
 }
 
