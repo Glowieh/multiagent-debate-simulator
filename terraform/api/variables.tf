@@ -22,7 +22,7 @@ variable "agent_runtime_arn" {
 }
 
 variable "cors_allowed_origins" {
-  description = "CloudFront frontend URL(s) allowed for CORS"
+  description = "CloudFront frontend URL(s) allowed for CORS. Only the first entry (index 0) is used — pass the terraform/frontend frontend_url output. Additional list elements are ignored. The value must match the browser origin exactly (scheme + host)."
   type        = list(string)
 }
 

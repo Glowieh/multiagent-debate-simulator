@@ -4,12 +4,14 @@ locals {
 
 resource "null_resource" "build_api_proxy" {
   triggers = {
-    auth_hash   = filemd5("${path.module}/../../lambda/api-proxy/auth_handler.py")
-    auth_py     = filemd5("${path.module}/../../lambda/api-proxy/auth.py")
-    cors_py     = filemd5("${path.module}/../../lambda/api-proxy/cors.py")
-    stream_hash = filemd5("${path.module}/../../lambda/api-proxy/stream_app.py")
-    auth_reqs   = filemd5("${path.module}/../../lambda/api-proxy/requirements-auth.txt")
-    stream_reqs = filemd5("${path.module}/../../lambda/api-proxy/requirements-stream.txt")
+    auth_hash      = filemd5("${path.module}/../../lambda/api-proxy/auth_handler.py")
+    auth_py        = filemd5("${path.module}/../../lambda/api-proxy/auth.py")
+    cors_py        = filemd5("${path.module}/../../lambda/api-proxy/cors.py")
+    secrets_module = filemd5("${path.module}/../../lambda/api-proxy/secrets_module.py")
+    run_sh         = filemd5("${path.module}/../../lambda/api-proxy/run.sh")
+    stream_hash    = filemd5("${path.module}/../../lambda/api-proxy/stream_app.py")
+    auth_reqs      = filemd5("${path.module}/../../lambda/api-proxy/requirements-auth.txt")
+    stream_reqs    = filemd5("${path.module}/../../lambda/api-proxy/requirements-stream.txt")
   }
 
   provisioner "local-exec" {

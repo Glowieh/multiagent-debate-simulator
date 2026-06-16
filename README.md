@@ -110,6 +110,7 @@ Deploy in this order (each step produces values needed by the next):
 ### Prerequisites
 
 - AWS CLI v2 and [Terraform](https://www.terraform.io/) ≥ 1.5
+- Both Terraform stacks (`terraform/api` and `terraform/frontend`) pin `hashicorp/aws` `~> 6.26`
 - AWS credentials with Bedrock, AgentCore, Lambda, API Gateway, S3, CloudFront, and Secrets Manager access
 - `pnpm install` and `cd app/DebateAgent && uv sync` (same as local setup)
 - Bedrock model access for **Amazon Nova Micro** (`eu.amazon.nova-micro-v1:0` in `.env.example`)
@@ -171,6 +172,20 @@ terraform output api_base_url
 `TF_VAR_demo_password` is the shared demo login password (stored in Secrets Manager; never commit it). Terraform builds the Lambda packages automatically via `scripts/build-api-proxy.sh`.
 
 Copy `api_base_url` (no trailing slash) — the frontend needs it at build time.
+
+#### CORS
+
+The API allows exactly one browser origin for CORS. Deploy frontend hosting (step 2) before the API so you have a real CloudFront URL.
+
+- Pass that URL as `cors_allowed_origins` — only the **first** list element is used; extra entries are ignored.
+- The value must match the browser origin exactly (`https://dxxx.cloudfront.net`, including scheme).
+- Terraform applies it to API Gateway OPTIONS preflight responses and to Lambda response headers via `CORS_ALLOWED_ORIGIN`.
+
+Example (use your `terraform output frontend_url`):
+
+```bash
+-var='cors_allowed_origins=["https://dxxx.cloudfront.net"]'
+```
 
 ### 4. Deploy the frontend
 
