@@ -18,6 +18,7 @@ agentcore/.env.local
 
 # AgentCore CLI state
 agentcore/.cli/
+agentcore/aws-targets.json
 
 # IDE
 .idea/

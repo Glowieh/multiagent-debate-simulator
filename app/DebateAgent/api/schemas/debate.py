@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 
 class DebateRequest(BaseModel):
-    topic: str = Field(min_length=1)
+    topic: str = Field(min_length=1, max_length=500)
 
 
 class DebateStartedEvent(BaseModel):

@@ -56,3 +56,29 @@ jobs:
 
       - name: Build
         run: pnpm --filter frontend build
+
+  agentcore-cdk:
+    name: AgentCore CDK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.2
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prepare deploy targets
+        run: cp agentcore/aws-targets.example.json agentcore/aws-targets.json
+
+      - name: Run CDK tests
+        run: pnpm --filter agentcore-cdk-app test
+
+      - name: Synthesize CDK stack
+        run: pnpm --filter agentcore-cdk-app run cdk synth

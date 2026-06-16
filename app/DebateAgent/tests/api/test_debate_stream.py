@@ -4,8 +4,8 @@ from collections.abc import AsyncIterator
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+import api.streaming.iter_debate_events as iter_debate_events_module
 from api.server import app
-from api.streaming import debate_stream
 
 
 def _parse_sse_payloads(body: str) -> list[dict[str, object]]:
@@ -52,7 +52,7 @@ async def test_stream_emits_error_event_on_failure(
             raise RuntimeError("forced failure")
             yield  # pragma: no cover
 
-    monkeypatch.setattr(debate_stream, "get_graph", lambda: FailingGraph())
+    monkeypatch.setattr(iter_debate_events_module, "get_graph", lambda: FailingGraph())
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -100,7 +100,7 @@ async def test_stream_stops_without_completion_on_client_disconnect(
         disconnect_checks += 1
         return disconnect_checks > 1
 
-    monkeypatch.setattr(debate_stream, "get_graph", lambda: SlowGraph())
+    monkeypatch.setattr(iter_debate_events_module, "get_graph", lambda: SlowGraph())
     monkeypatch.setattr(Request, "is_disconnected", mock_is_disconnected)
 
     transport = ASGITransport(app=app)

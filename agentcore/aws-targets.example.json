@@ -1,0 +1,8 @@
+[
+  {
+    "name": "default",
+    "account": "123456789012",
+    "region": "eu-west-1",
+    "langsmithProject": "my-langsmith-project"
+  }
+]

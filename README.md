@@ -117,15 +117,21 @@ Deploy in this order (each step produces values needed by the next):
 
 ### 1. Deploy AgentCore runtime
 
-Create a deployment target (once per account/region) in `agentcore/aws-targets.json`:
+Create a deployment target (once per account/region) by copying the example file:
+
+```bash
+cp agentcore/aws-targets.example.json agentcore/aws-targets.json
+```
+
+Edit `agentcore/aws-targets.json` with your AWS account ID, region, and LangSmith project name:
 
 ```json
 [
   {
     "name": "default",
-    "description": "Production",
     "account": "123456789012",
-    "region": "eu-west-1"
+    "region": "eu-west-1",
+    "langsmithProject": "my-langsmith-project"
   }
 ]
 ```

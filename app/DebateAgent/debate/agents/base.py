@@ -91,6 +91,8 @@ class DebaterAgent(BaseAgent):
     )
 
     def __init__(self) -> None:
+        # Skips BaseAgent.__init__: debaters use invoke_turn() + load_model(),
+        # not the _chains dict built by BaseAgent.
         return
 
     def _human_templates(self) -> dict[str, str]:

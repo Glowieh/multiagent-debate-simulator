@@ -105,7 +105,7 @@ Deploy order: AgentCore runtime → frontend hosting (for CORS origin) → API (
 - Always use virtual environments with Python (using uv)
 - Never use classic LangChain high-level APIs (e.g. `AgentExecutor`); use LangGraph and `langchain_core` instead
 - Always prefer top of the file imports in Python over importing inside functions
-- Do not commit secrets (`.env`, real account IDs in `agentcore/aws-targets.json`, demo passwords)
+- Do not commit secrets (`.env`, `agentcore/aws-targets.json`, demo passwords). Copy `agentcore/aws-targets.example.json` to `agentcore/aws-targets.json` before deploy.
 
 # Planning instructions
 
