@@ -10,11 +10,14 @@
     "agentcore:invoke": "agentcore invoke",
     "agentcore:validate": "agentcore validate",
     "dev:frontend": "pnpm --filter frontend dev",
+    "deploy:frontend": "bash scripts/deploy-frontend.sh",
     "dev:api": "cd app/DebateAgent && uv run uvicorn api.server:app --reload --port 8000",
     "typecheck:python": "cd app/DebateAgent && uv run pyright",
+    "lint:frontend": "pnpm --filter frontend lint",
     "lint:python": "cd app/DebateAgent && uv run ruff check .",
     "format:python": "cd app/DebateAgent && uv run ruff format .",
-    "format:python:check": "cd app/DebateAgent && uv run ruff format --check ."
+    "format:python:check": "cd app/DebateAgent && uv run ruff format --check .",
+    "test:agentcore-cdk": "pnpm --filter agentcore-cdk-app test"
   },
   "devDependencies": {
     "@aws/agentcore": "^0.19.0"

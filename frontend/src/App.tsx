@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { streamDebate } from "./api/debateStream";
+import { getAccessToken, isAuthRequired } from "./api/auth";
+import { UnauthorizedError, streamDebate } from "./api/debateStream";
 import { DebateStatus } from "./components/DebateStatus";
 import { DebateView } from "./components/DebateView";
+import { LoginGate } from "./components/LoginGate";
 import { TopicForm } from "./components/TopicForm";
 import type { DebateEvent } from "./types/debate";
 import {
@@ -12,6 +14,9 @@ import {
 import "./App.css";
 
 function App() {
+  const [authenticated, setAuthenticated] = useState(
+    () => !isAuthRequired() || getAccessToken() !== null,
+  );
   const [items, setItems] = useState<DisplayItem[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [abortedByUser, setAbortedByUser] = useState(false);
@@ -72,6 +77,11 @@ function App() {
         if (controller.signal.aborted) {
           return;
         }
+        if (err instanceof UnauthorizedError) {
+          setAuthenticated(false);
+          setError("Session expired. Please sign in again.");
+          return;
+        }
         setError(err instanceof Error ? err.message : "Unknown error");
       } finally {
         setIsStreaming(false);
@@ -79,6 +89,10 @@ function App() {
     },
     [handleEvent],
   );
+
+  if (isAuthRequired() && !authenticated) {
+    return <LoginGate onAuthenticated={() => setAuthenticated(true)} />;
+  }
 
   return (
     <main className="app">

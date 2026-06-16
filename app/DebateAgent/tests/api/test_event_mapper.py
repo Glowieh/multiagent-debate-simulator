@@ -65,7 +65,19 @@ def test_maps_wikipedia_tool_events() -> None:
                     "turn_red": 1,
                     "turn_green": 0,
                     "active_speaker": "Red",
-                    "pending_tool_query": "renewable energy",
+                    "turn_messages": [
+                        {
+                            "type": "ai",
+                            "content": "",
+                            "tool_calls": [
+                                {
+                                    "name": "wikipedia_search",
+                                    "args": {"query": "renewable energy"},
+                                    "id": "1",
+                                }
+                            ],
+                        }
+                    ],
                 }
             },
         }
@@ -85,7 +97,19 @@ def test_maps_wikipedia_tool_events() -> None:
                     "turn_red": 1,
                     "turn_green": 0,
                     "active_speaker": "Red",
-                    "pending_tool_query": "renewable energy",
+                    "turn_messages": [
+                        {
+                            "type": "ai",
+                            "content": "",
+                            "tool_calls": [
+                                {
+                                    "name": "wikipedia_search",
+                                    "args": {"query": "renewable energy"},
+                                    "id": "1",
+                                }
+                            ],
+                        }
+                    ],
                 }
             },
         }
@@ -118,7 +142,6 @@ def test_maps_wikipedia_tool_events_for_multiple_queries() -> None:
                     "turn_green": 0,
                     "active_speaker": "Green",
                     "turn_messages": [ai_with_tools],
-                    "pending_tool_query": "solar power",
                 }
             },
         }
@@ -165,6 +188,22 @@ def test_maps_chat_model_stream_to_message_chunk() -> None:
     assert events[0].type == "message_chunk"
     assert events[0].speaker == "Green"  # pyright: ignore[reportAttributeAccessIssue]
     assert events[0].content == "Hello"  # pyright: ignore[reportAttributeAccessIssue]
+
+
+def test_maps_summarizer_chat_model_stream_to_message_chunk() -> None:
+    mapper = DebateEventMapper(topic="Topic")
+    events = mapper.map_langgraph_event(
+        {
+            "event": "on_chat_model_stream",
+            "name": "ChatBedrock",
+            "metadata": {"langgraph_node": "summarizer"},
+            "data": {"chunk": type("Chunk", (), {"content": "Summary chunk"})()},
+        }
+    )
+    assert len(events) == 1
+    assert events[0].type == "message_chunk"
+    assert events[0].speaker == "summarizer"  # pyright: ignore[reportAttributeAccessIssue]
+    assert events[0].content == "Summary chunk"  # pyright: ignore[reportAttributeAccessIssue]
 
 
 def test_error_events_include_completion() -> None:

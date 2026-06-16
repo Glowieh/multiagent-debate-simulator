@@ -13,9 +13,16 @@
       "build": "CodeZip",
       "entrypoint": "main.py",
       "codeLocation": "app/DebateAgent/",
-      "runtimeVersion": "PYTHON_3_14",
+      "runtimeVersion": "PYTHON_3_12",
       "networkMode": "PUBLIC",
-      "protocol": "HTTP"
+      "protocol": "HTTP",
+      "envVars": [
+        { "name": "USE_LOCAL_LLM", "value": "false" },
+        { "name": "BEDROCK_MODEL_ID", "value": "eu.amazon.nova-micro-v1:0" },
+        { "name": "AWS_REGION", "value": "eu-west-1" },
+        { "name": "LANGSMITH_TRACING", "value": "true" },
+        { "name": "LANGSMITH_ENDPOINT", "value": "https://api.smith.langchain.com" }
+      ]
     }
   ],
   "memories": [],

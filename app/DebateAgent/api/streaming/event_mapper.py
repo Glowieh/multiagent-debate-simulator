@@ -4,6 +4,7 @@ Message ``name`` fields use ``"Red"``, ``"Green"``, ``"Summarizer"``.
 Stream events use lowercase ``"summarizer"`` to match the frontend Speaker type.
 """
 
+from collections.abc import Mapping
 from typing import Any, Literal, cast
 
 from langchain_core.messages import AIMessage
@@ -19,6 +20,10 @@ from api.schemas.debate import (
     ToolCallStartedEvent,
     TurnCompletedEvent,
     TurnStartedEvent,
+)
+from debate.nodes.message_utils import (
+    extract_chunk_content,
+    extract_query_from_tool_call,
 )
 
 Speaker = Literal["Red", "Green", "summarizer"]
@@ -38,7 +43,9 @@ def _speaker_for_node(node: str) -> Speaker | None:
     return None
 
 
-def _debater_agent_node(node: str) -> Literal["debater_red_agent", "debater_green_agent"] | None:
+def _debater_agent_node(
+    node: str,
+) -> Literal["debater_red_agent", "debater_green_agent"] | None:
     if node == "debater_red_agent":
         return "debater_red_agent"
     if node == "debater_green_agent":
@@ -47,23 +54,7 @@ def _debater_agent_node(node: str) -> Literal["debater_red_agent", "debater_gree
 
 
 def _extract_chunk_content(chunk: object) -> str:
-    if chunk is None:
-        return ""
-    content = getattr(chunk, "content", chunk)
-    if isinstance(content, str):
-        return content
-    if isinstance(content, list):
-        parts: list[str] = []
-        for item in cast(list[object], content):
-            if isinstance(item, str):
-                parts.append(item)
-            elif isinstance(item, dict):
-                item_dict = cast(dict[str, Any], item)
-                text = item_dict.get("text")
-                if text is not None:
-                    parts.append(str(text))
-        return "".join(parts)
-    return str(content)
+    return extract_chunk_content(chunk)
 
 
 def _extract_message_content(output: object) -> str:
@@ -90,22 +81,18 @@ def _state_from_data(data: dict[str, Any]) -> dict[str, Any]:
     return {}
 
 
-def _extract_query_from_tool_call(tool_call: dict[str, Any]) -> str:
-    args = tool_call.get("args", {})
-    if isinstance(args, dict):
-        query = args.get("query")
-        if query is not None:
-            return str(query)
-    return ""
+def _extract_query_from_tool_call(tool_call: Mapping[str, Any]) -> str:
+    return extract_query_from_tool_call(tool_call)
 
 
 def _extract_wikipedia_queries(state: dict[str, Any]) -> list[str]:
     turn_messages = state.get("turn_messages", [])
     if isinstance(turn_messages, list):
-        for message in reversed(turn_messages):
+        message_list = cast(list[object], turn_messages)
+        for message in reversed(message_list):
             if isinstance(message, AIMessage) and message.tool_calls:
                 queries = [
-                    _extract_query_from_tool_call(cast(dict[str, Any], tool_call))
+                    _extract_query_from_tool_call(tool_call)
                     for tool_call in message.tool_calls
                 ]
                 if queries:
@@ -114,15 +101,15 @@ def _extract_wikipedia_queries(state: dict[str, Any]) -> list[str]:
                 message_dict = cast(dict[str, Any], message)
                 tool_calls = message_dict.get("tool_calls")
                 if tool_calls and isinstance(tool_calls, list):
+                    tool_call_list = cast(list[object], tool_calls)
                     queries = [
-                        _extract_query_from_tool_call(cast(dict[str, Any], tool_call))
-                        for tool_call in tool_calls
+                        _extract_query_from_tool_call(
+                            cast(Mapping[str, Any], tool_call)
+                        )
+                        for tool_call in tool_call_list
                     ]
                     if queries:
                         return queries
-    pending = state.get("pending_tool_query")
-    if pending:
-        return [str(pending)]
     return [""]
 
 

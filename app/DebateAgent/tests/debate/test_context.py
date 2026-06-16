@@ -1,4 +1,4 @@
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 
 from debate.context import format_debate_transcript
 from debate.initial_state import build_initial_state
@@ -10,7 +10,7 @@ def test_format_debate_transcript_empty() -> None:
 
 
 def test_format_debate_transcript_labeled_messages_with_turn_numbers() -> None:
-    messages = [
+    messages: list[BaseMessage] = [
         AIMessage(content="Against argument one.", name="Red"),
         AIMessage(content="For argument one.", name="Green"),
         AIMessage(content="Against rebuttal.", name="Red"),
@@ -24,7 +24,7 @@ def test_format_debate_transcript_labeled_messages_with_turn_numbers() -> None:
 
 
 def test_format_debate_transcript_skips_unlabeled_messages() -> None:
-    messages = [
+    messages: list[BaseMessage] = [
         HumanMessage(content="Should AI replace teachers?"),
         AIMessage(content="Against argument one.", name="Red"),
     ]
@@ -39,10 +39,8 @@ def test_build_initial_state() -> None:
     assert state["messages"] == []
     assert state["turn_red"] == 0
     assert state["turn_green"] == 0
-    assert state["phase"] == "debating"
     assert state["turn_messages"] == []
     assert state["active_speaker"] is None
-    assert state["pending_tool_query"] is None
     assert state["tool_loop_count"] == 0
     assert state["wikipedia_turn_red"] is None
     assert state["wikipedia_turn_green"] is None

@@ -1,7 +1,12 @@
 from abc import ABC
-from typing import Literal
+from typing import Literal, cast
 
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
+from langchain_core.messages import (
+    AIMessage,
+    BaseMessage,
+    HumanMessage,
+    SystemMessage,
+)
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import Runnable
@@ -65,9 +70,19 @@ class DebaterAgent(BaseAgent):
         "Do not repeat your opening verbatim. "
         "Reply in exactly 3 brief paragraphs."
     )
-    _wikipedia_available_instruction: str = (
-        "\n\nYou may call wikipedia_search up to 3 times this turn, "
-        "or save your Wikipedia lookup for a later turn."
+    _wikipedia_turn_one_instruction: str = (
+        "\n\nYou must call wikipedia_search on either this turn (turn 1) or turn 2 — "
+        "not turn 3. If you want facts now, call wikipedia_search up to 3 times "
+        "before your final reply. If you defer, you must use it on turn 2."
+    )
+    _wikipedia_turn_two_must_use_instruction: str = (
+        "\n\nYou have not used Wikipedia yet. "
+        "You must call wikipedia_search this turn (up to 3 times) "
+        "before your final reply."
+    )
+    _wikipedia_turn_three_missed_instruction: str = (
+        "\n\nYou should have used Wikipedia on turn 1 or 2. "
+        "Do not call wikipedia_search; argue from the transcript."
     )
     _wikipedia_exhausted_instruction: str = (
         "\n\nYou have already used your Wikipedia lookup. "
@@ -75,6 +90,7 @@ class DebaterAgent(BaseAgent):
     )
 
     def __init__(self) -> None:
+        # Skips BaseAgent.__init__: debaters use invoke_turn(), not _chains.
         return
 
     def _human_templates(self) -> dict[str, str]:
@@ -83,19 +99,23 @@ class DebaterAgent(BaseAgent):
             "rebuttal": self.rebuttal_human_template,
         }
 
-    def _select_human_template(self, turn: int, *, is_opening: bool) -> str:
-        if is_opening:
+    def _select_human_template(self, turn: int, *, is_debate_opening: bool) -> str:
+        if is_debate_opening:
             return self.opening_human_template
         return self.rebuttal_human_template
 
     def _wikipedia_instruction(
         self, turn: int, wikipedia_turn: int | None
     ) -> str:
-        if wikipedia_turn is None:
-            return self._wikipedia_available_instruction
-        if wikipedia_turn < turn:
-            return self._wikipedia_exhausted_instruction
-        return ""
+        if wikipedia_turn is not None:
+            if wikipedia_turn < turn:
+                return self._wikipedia_exhausted_instruction
+            return ""
+        if turn == 1:
+            return self._wikipedia_turn_one_instruction
+        if turn == 2:
+            return self._wikipedia_turn_two_must_use_instruction
+        return self._wikipedia_turn_three_missed_instruction
 
     def build_turn_messages(
         self,
@@ -103,10 +123,12 @@ class DebaterAgent(BaseAgent):
         context: str,
         turn: int,
         *,
-        is_opening: bool,
+        is_debate_opening: bool,
         wikipedia_turn: int | None = None,
     ) -> list[BaseMessage]:
-        template = self._select_human_template(turn, is_opening=is_opening)
+        template = self._select_human_template(
+            turn, is_debate_opening=is_debate_opening
+        )
         human_content = template.format(
             topic=topic,
             context=context,
@@ -120,14 +142,13 @@ class DebaterAgent(BaseAgent):
         ]
 
     @staticmethod
-    def _has_tool_message(messages: list[BaseMessage]) -> bool:
-        return any(isinstance(message, ToolMessage) for message in messages)
-
-    @staticmethod
     def _coerce_ai_message(response: BaseMessage) -> AIMessage:
         if isinstance(response, AIMessage):
             return response
-        return AIMessage(content=str(response.content))
+        content = cast(object, getattr(response, "content", ""))
+        if isinstance(content, str):
+            return AIMessage(content=content)
+        return AIMessage(content=str(content))
 
     def _ensure_prompt_messages(
         self,
@@ -136,13 +157,17 @@ class DebaterAgent(BaseAgent):
         topic: str,
         context: str,
         turn: int,
-        is_opening: bool,
+        is_debate_opening: bool,
         wikipedia_turn: int | None,
     ) -> list[BaseMessage]:
         if any(isinstance(message, SystemMessage) for message in messages):
             return messages
         return self.build_turn_messages(
-            topic, context, turn, is_opening=is_opening, wikipedia_turn=wikipedia_turn
+            topic,
+            context,
+            turn,
+            is_debate_opening=is_debate_opening,
+            wikipedia_turn=wikipedia_turn,
         ) + messages
 
     def invoke_turn(
@@ -152,19 +177,23 @@ class DebaterAgent(BaseAgent):
         topic: str,
         context: str,
         turn: int,
-        is_opening: bool,
+        is_debate_opening: bool,
         first_call: bool,
         wikipedia_turn: int | None = None,
+        force_final: bool = False,
     ) -> tuple[list[BaseMessage], AIMessage]:
         model = load_model()
-        if wikipedia_turn is None or wikipedia_turn == turn:
-            model = model.bind_tools(WIKIPEDIA_TOOLS)
+        if (
+            not force_final
+            and (wikipedia_turn is None or wikipedia_turn == turn)
+        ):
+            model = model.bind_tools(WIKIPEDIA_TOOLS)  # pyright: ignore[reportUnknownMemberType]
         if first_call:
             messages = self.build_turn_messages(
                 topic,
                 context,
                 turn,
-                is_opening=is_opening,
+                is_debate_opening=is_debate_opening,
                 wikipedia_turn=wikipedia_turn,
             )
         else:
@@ -173,9 +202,19 @@ class DebaterAgent(BaseAgent):
                 topic=topic,
                 context=context,
                 turn=turn,
-                is_opening=is_opening,
+                is_debate_opening=is_debate_opening,
                 wikipedia_turn=wikipedia_turn,
             )
+
+        if force_final:
+            messages = messages + [
+                HumanMessage(
+                    content=(
+                        "Provide your final 3-paragraph reply now. "
+                        "Do not call tools."
+                    )
+                )
+            ]
 
         response = self._coerce_ai_message(model.invoke(messages))
 
@@ -195,3 +234,23 @@ class SummarizerAgent(BaseAgent):
         "4. Verdict — explicitly state whether Red (against) or Green (for) "
         "presented stronger arguments, with 2–3 sentences of justification"
     )
+
+    def __init__(self) -> None:
+        # Skips BaseAgent.__init__: uses invoke_summary() + load_model().
+        return
+
+    def invoke_summary(self, topic: str, context: str) -> str:
+        messages = [
+            SystemMessage(content=self.system_prompt),
+            HumanMessage(
+                content=self.human_template.format(topic=topic, context=context)
+            ),
+        ]
+        response = load_model().invoke(messages)
+        content = getattr(response, "content", response)
+        if isinstance(content, str):
+            return content
+        return str(content)
+
+    def respond(self, topic: str, context: str, turn: int = 0) -> str:
+        return self.invoke_summary(topic, context)

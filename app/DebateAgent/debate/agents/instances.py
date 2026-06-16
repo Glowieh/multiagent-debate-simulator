@@ -26,3 +26,10 @@ def get_summarizer() -> Summarizer:
     if _summarizer is None:
         _summarizer = Summarizer()
     return _summarizer
+
+
+def reset_cached_instances() -> None:
+    global _debater_red, _debater_green, _summarizer
+    _debater_red = None
+    _debater_green = None
+    _summarizer = None
