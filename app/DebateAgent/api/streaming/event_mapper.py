@@ -21,6 +21,10 @@ from api.schemas.debate import (
     TurnCompletedEvent,
     TurnStartedEvent,
 )
+from debate.nodes.message_utils import (
+    extract_chunk_content,
+    extract_query_from_tool_call,
+)
 
 Speaker = Literal["Red", "Green", "summarizer"]
 DEBATER_AGENT_NODES = frozenset({"debater_red_agent", "debater_green_agent"})
@@ -50,23 +54,7 @@ def _debater_agent_node(
 
 
 def _extract_chunk_content(chunk: object) -> str:
-    if chunk is None:
-        return ""
-    content = getattr(chunk, "content", chunk)
-    if isinstance(content, str):
-        return content
-    if isinstance(content, list):
-        parts: list[str] = []
-        for item in cast(list[object], content):
-            if isinstance(item, str):
-                parts.append(item)
-            elif isinstance(item, dict):
-                item_dict = cast(dict[str, Any], item)
-                text = item_dict.get("text")
-                if text is not None:
-                    parts.append(str(text))
-        return "".join(parts)
-    return str(content)
+    return extract_chunk_content(chunk)
 
 
 def _extract_message_content(output: object) -> str:
@@ -94,13 +82,7 @@ def _state_from_data(data: dict[str, Any]) -> dict[str, Any]:
 
 
 def _extract_query_from_tool_call(tool_call: Mapping[str, Any]) -> str:
-    args = tool_call.get("args", {})
-    if isinstance(args, dict):
-        args_dict = cast(dict[str, Any], args)
-        query = args_dict.get("query")
-        if query is not None:
-            return str(query)
-    return ""
+    return extract_query_from_tool_call(tool_call)
 
 
 def _extract_wikipedia_queries(state: dict[str, Any]) -> list[str]:
@@ -128,9 +110,6 @@ def _extract_wikipedia_queries(state: dict[str, Any]) -> list[str]:
                     ]
                     if queries:
                         return queries
-    pending = state.get("pending_tool_query")
-    if pending:
-        return [str(pending)]
     return [""]
 
 

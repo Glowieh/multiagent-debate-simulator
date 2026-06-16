@@ -86,3 +86,31 @@ def test_wikipedia_search_handles_rate_limit(monkeypatch: pytest.MonkeyPatch) ->
     result = wikipedia_search.invoke({"query": "renewable energy"})  # pyright: ignore[reportUnknownMemberType]
 
     assert result == "Wikipedia rate limit exceeded; try again later."
+
+
+def test_wikipedia_search_handles_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
+    import time
+    from concurrent.futures import ThreadPoolExecutor
+
+    def slow_search(query: str) -> str:
+        time.sleep(0.2)
+        return "too slow"
+
+    monkeypatch.setattr(wikipedia_module, "_search_wikipedia", slow_search)
+    monkeypatch.setattr(
+        wikipedia_module,
+        "_wiki_executor",
+        ThreadPoolExecutor(max_workers=1),
+    )
+    monkeypatch.setattr(
+        "debate.tools.wikipedia.get_settings",
+        lambda: type(
+            "Settings",
+            (),
+            {"wikipedia_request_timeout_seconds": 0.05},
+        )(),
+    )
+
+    result = wikipedia_search.invoke({"query": "slow topic"})  # pyright: ignore[reportUnknownMemberType]
+
+    assert "timed out" in result

@@ -1,3 +1,6 @@
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeoutError
+
 import wikipediaapi
 from langchain_core.tools import tool  # pyright: ignore[reportUnknownVariableType]
 from wikipediaapi import WikipediaException, WikiRateLimitError
@@ -7,6 +10,7 @@ from debate.settings import get_settings
 MAX_SUMMARY_CHARS = 1500
 
 _wiki_client: wikipediaapi.Wikipedia | None = None
+_wiki_executor = ThreadPoolExecutor(max_workers=1)
 
 
 def get_wikipedia_client() -> wikipediaapi.Wikipedia:
@@ -25,22 +29,30 @@ def get_wikipedia_client() -> wikipediaapi.Wikipedia:
 @tool  # pyright: ignore[reportUnknownVariableType]
 def wikipedia_search(query: str) -> str:
     """Search Wikipedia for factual information about a topic."""
+    timeout = get_settings().wikipedia_request_timeout_seconds
     try:
-        wiki = get_wikipedia_client()
-        results = wiki.search(query, limit=1)
-        if not results.pages:
-            return f"No Wikipedia page found for '{query}'."
-        page = next(iter(results.pages.values()))
-        if not page.exists():
-            return f"No Wikipedia page found for '{query}'."
-        summary = page.summary
-        if len(summary) > MAX_SUMMARY_CHARS:
-            summary = summary[:MAX_SUMMARY_CHARS].rsplit(" ", 1)[0] + "…"
-        return f"Title: {page.title}\n\n{summary}"
+        future = _wiki_executor.submit(_search_wikipedia, query)
+        return future.result(timeout=timeout)
+    except FuturesTimeoutError:
+        return f"Wikipedia lookup timed out after {timeout:g} seconds."
     except WikiRateLimitError:
         return "Wikipedia rate limit exceeded; try again later."
     except WikipediaException as exc:
         return f"Wikipedia lookup failed: {exc}"
+
+
+def _search_wikipedia(query: str) -> str:
+    wiki = get_wikipedia_client()
+    results = wiki.search(query, limit=1)
+    if not results.pages:
+        return f"No Wikipedia page found for '{query}'."
+    page = next(iter(results.pages.values()))
+    if not page.exists():
+        return f"No Wikipedia page found for '{query}'."
+    summary = page.summary
+    if len(summary) > MAX_SUMMARY_CHARS:
+        summary = summary[:MAX_SUMMARY_CHARS].rsplit(" ", 1)[0] + "…"
+    return f"Title: {page.title}\n\n{summary}"
 
 
 WIKIPEDIA_TOOLS = [wikipedia_search]

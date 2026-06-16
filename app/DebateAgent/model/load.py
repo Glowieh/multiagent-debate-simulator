@@ -10,12 +10,22 @@ def _create_model(settings: DebateSettings) -> BaseChatModel:
     if settings.use_local_llm:
         from langchain_ollama import ChatOllama
 
-        return ChatOllama(
-            model=settings.ollama_model,
-            base_url=settings.ollama_base_url,
-        )
+        kwargs: dict[str, object] = {
+            "model": settings.ollama_model,
+            "base_url": settings.ollama_base_url,
+        }
+        if settings.llm_request_timeout_seconds is not None:
+            kwargs["timeout"] = settings.llm_request_timeout_seconds
+        return ChatOllama(**kwargs)  # pyright: ignore[reportArgumentType]
 
-    return ChatBedrock(model=settings.bedrock_model_id)
+    bedrock_kwargs: dict[str, object] = {"model": settings.bedrock_model_id}
+    if settings.llm_request_timeout_seconds is not None:
+        from botocore.config import Config
+
+        bedrock_kwargs["config"] = Config(
+            read_timeout=settings.llm_request_timeout_seconds
+        )
+    return ChatBedrock(**bedrock_kwargs)  # pyright: ignore[reportArgumentType]
 
 
 def load_model() -> BaseChatModel:

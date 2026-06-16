@@ -106,6 +106,7 @@ Deploy order: AgentCore runtime → frontend hosting (for CORS origin) → API (
 - Never use classic LangChain high-level APIs (e.g. `AgentExecutor`); use LangGraph and `langchain_core` instead
 - Always prefer top of the file imports in Python over importing inside functions
 - Do not commit secrets (`.env`, `agentcore/aws-targets.json`, demo passwords). Copy `agentcore/aws-targets.example.json` to `agentcore/aws-targets.json` before deploy.
+- `get_graph()`, `load_model()`, `get_settings()`, and agent instances are cached singletons. In tests that swap config, call `reset_model_cache()` and `reset_cached_instances()` from `model.load` and `debate.agents.instances`.
 
 # Planning instructions
 

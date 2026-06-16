@@ -115,3 +115,37 @@ async def test_stream_stops_without_completion_on_client_disconnect(
 
     assert types[0] == "debate_started"
     assert "debate_completed" not in types
+
+
+@pytest.mark.asyncio
+async def test_stream_rejects_whitespace_only_topic() -> None:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post(
+            "/api/debate/stream",
+            json={"topic": "   "},
+        )
+
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_stream_rejects_over_limit_topic() -> None:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post(
+            "/api/debate/stream",
+            json={"topic": "x" * 501},
+        )
+
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_health_endpoint_returns_ok() -> None:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/health")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}

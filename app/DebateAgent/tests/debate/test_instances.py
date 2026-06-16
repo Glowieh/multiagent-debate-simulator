@@ -50,7 +50,7 @@ def test_invoke_turn_reuses_cached_model(monkeypatch: pytest.MonkeyPatch) -> Non
         topic="Topic",
         context="Context",
         turn=1,
-        is_opening=True,
+        is_debate_opening=True,
         first_call=True,
     )
     agent.invoke_turn(
@@ -58,7 +58,7 @@ def test_invoke_turn_reuses_cached_model(monkeypatch: pytest.MonkeyPatch) -> Non
         topic="Topic",
         context="Context",
         turn=2,
-        is_opening=False,
+        is_debate_opening=False,
         first_call=True,
     )
 

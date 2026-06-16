@@ -10,10 +10,8 @@ class DebateState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
     turn_red: int
     turn_green: int
-    phase: Literal["debating", "completed"]
     turn_messages: Annotated[list[BaseMessage | RemoveMessage], add_messages]
     active_speaker: Literal["Red", "Green"] | None
-    pending_tool_query: str | None
     tool_loop_count: int
     wikipedia_turn_red: int | None
     wikipedia_turn_green: int | None
@@ -25,10 +23,8 @@ class DebateStateUpdate(TypedDict, total=False):
     messages: Annotated[list[BaseMessage], add_messages]
     turn_red: int
     turn_green: int
-    phase: Literal["debating", "completed"]
     turn_messages: Annotated[list[BaseMessage | RemoveMessage], add_messages]
     active_speaker: Literal["Red", "Green"] | None
-    pending_tool_query: str | None
     tool_loop_count: int
     wikipedia_turn_red: int | None
     wikipedia_turn_green: int | None

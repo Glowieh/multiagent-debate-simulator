@@ -10,6 +10,7 @@ from debate.nodes.debater_green import (
     debater_green_finish_node,
 )
 from debate.nodes.debater_red import debater_red_agent_node, debater_red_finish_node
+from debate.nodes.message_utils import final_text_from_message
 from debate.nodes.summarizer import summarizer_node
 from debate.nodes.wikipedia_tool import wikipedia_tool_node
 from debate.settings import get_settings
@@ -27,11 +28,33 @@ def _debate_complete(state: DebateState) -> bool:
 def _route_after_agent(
     state: DebateState,
     speaker: Literal["Red", "Green"],
-) -> Literal["wikipedia_tool", "debater_red_finish", "debater_green_finish"]:
-    last = state["turn_messages"][-1]
+) -> Literal[
+    "wikipedia_tool",
+    "debater_red_finish",
+    "debater_green_finish",
+    "debater_red_agent",
+    "debater_green_agent",
+]:
+    turn_messages = state["turn_messages"]
+    if not turn_messages:
+        raise ValueError("turn_messages must not be empty after agent node")
+    last = turn_messages[-1]
     max_loops = get_settings().max_tool_loops
     turn_key = "turn_red" if speaker == "Red" else "turn_green"
     current_turn = state[turn_key] + 1
+    finish_node: Literal["debater_red_finish", "debater_green_finish"] = (
+        "debater_red_finish" if speaker == "Red" else "debater_green_finish"
+    )
+    agent_node: Literal["debater_red_agent", "debater_green_agent"] = (
+        "debater_red_agent" if speaker == "Red" else "debater_green_agent"
+    )
+    if (
+        isinstance(last, AIMessage)
+        and last.tool_calls
+        and not final_text_from_message(last).strip()
+        and state["tool_loop_count"] >= max_loops
+    ):
+        return agent_node
     if (
         isinstance(last, AIMessage)
         and last.tool_calls
@@ -39,9 +62,6 @@ def _route_after_agent(
         and wikipedia_allowed(state, speaker, current_turn)
     ):
         return "wikipedia_tool"
-    finish_node = (
-        "debater_red_finish" if speaker == "Red" else "debater_green_finish"
-    )
     return finish_node
 
 
@@ -66,10 +86,10 @@ def build_debate_graph() -> CompiledStateGraph[
     DebateState, None, DebateState, DebateState
 ]:
     workflow = StateGraph(DebateState)
-    workflow.add_node("debater_red_agent", debater_red_agent_node)  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
-    workflow.add_node("debater_red_finish", debater_red_finish_node)  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
-    workflow.add_node("debater_green_agent", debater_green_agent_node)  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
-    workflow.add_node("debater_green_finish", debater_green_finish_node)  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
+    workflow.add_node("debater_red_agent", debater_red_agent_node)  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType, reportArgumentType]
+    workflow.add_node("debater_red_finish", debater_red_finish_node)  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType, reportArgumentType]
+    workflow.add_node("debater_green_agent", debater_green_agent_node)  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType, reportArgumentType]
+    workflow.add_node("debater_green_finish", debater_green_finish_node)  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType, reportArgumentType]
     workflow.add_node("wikipedia_tool", wikipedia_tool_node)  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
     workflow.add_node("summarizer", summarizer_node)  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
 

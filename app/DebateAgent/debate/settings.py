@@ -17,6 +17,8 @@ class DebateSettings(BaseSettings):
     bedrock_model_id: str = "eu.amazon.nova-micro-v1:0"
     max_turns_per_debater: int = Field(default=3, ge=1)
     max_tool_loops: int = Field(default=3, ge=1)
+    llm_request_timeout_seconds: float | None = Field(default=120.0, ge=0)
+    wikipedia_request_timeout_seconds: float = Field(default=10.0, ge=0)
     wikipedia_user_agent: str = (
         "MultiAgentDebateBot/1.0 (https://github.com/Glowieh/multiagent-debate-simulator)"
     )

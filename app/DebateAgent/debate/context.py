@@ -1,13 +1,6 @@
-from typing import cast
-
 from langchain_core.messages import AIMessage, BaseMessage
 
-
-def _message_text(message: BaseMessage) -> str:
-    content = cast(object, getattr(message, "content", ""))
-    if isinstance(content, str):
-        return content
-    return str(content)
+from debate.nodes.message_utils import final_text_from_message
 
 
 def _speaker_label(message: BaseMessage) -> str | None:
@@ -30,7 +23,9 @@ def format_debate_transcript(messages: list[BaseMessage]) -> str:
             continue
         speaker_turn_counts[speaker] = speaker_turn_counts.get(speaker, 0) + 1
         turn = speaker_turn_counts[speaker]
-        transcript_lines.append(f"{speaker} (turn {turn}): {_message_text(message)}")
+        transcript_lines.append(
+            f"{speaker} (turn {turn}): {final_text_from_message(message)}"
+        )
 
     if transcript_lines:
         return "\n".join(transcript_lines)

@@ -1,10 +1,20 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from debate.topic import MAX_TOPIC_LENGTH, TopicValidationError, normalize_topic
 
 
 class DebateRequest(BaseModel):
-    topic: str = Field(min_length=1, max_length=500)
+    topic: str = Field(min_length=1, max_length=MAX_TOPIC_LENGTH)
+
+    @field_validator("topic")
+    @classmethod
+    def validate_topic(cls, value: str) -> str:
+        try:
+            return normalize_topic(value)
+        except TopicValidationError as exc:
+            raise ValueError(str(exc)) from exc
 
 
 class DebateStartedEvent(BaseModel):
