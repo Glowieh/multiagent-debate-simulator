@@ -14,8 +14,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, StreamingResponse
 from starlette.routing import Route
 
-from auth import extract_bearer_token, required_env, verify_access_token
-from cors import cors_headers
+from common import cors_headers, extract_bearer_token, required_env, verify_access_token
 
 
 def _agentcore_client() -> Any:

@@ -26,10 +26,10 @@ rm -rf "${OUT}"
 mkdir -p "${OUT}/auth" "${OUT}/stream"
 
 install_deps "${SRC}/requirements-auth.txt" "${OUT}/auth"
-cp "${SRC}/auth_handler.py" "${SRC}/auth.py" "${SRC}/cors.py" "${SRC}/secrets_module.py" "${OUT}/auth/"
+cp "${SRC}/auth_handler.py" "${SRC}/common.py" "${SRC}/secrets_module.py" "${OUT}/auth/"
 
 install_deps "${SRC}/requirements-stream.txt" "${OUT}/stream"
-cp "${SRC}/stream_app.py" "${SRC}/auth.py" "${SRC}/cors.py" "${SRC}/secrets_module.py" "${SRC}/run.sh" "${OUT}/stream/"
+cp "${SRC}/stream_app.py" "${SRC}/common.py" "${SRC}/secrets_module.py" "${SRC}/run.sh" "${OUT}/stream/"
 chmod +x "${OUT}/stream/run.sh"
 
 echo "Built Lambda packages in ${OUT}"
