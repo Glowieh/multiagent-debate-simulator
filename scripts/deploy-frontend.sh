@@ -66,10 +66,7 @@ INVALIDATION_ID="$(aws cloudfront create-invalidation \
 
 echo "Invalidation $INVALIDATION_ID created."
 
-if [[ -n "${FRONTEND_URL:-}" ]]; then
-  echo "Frontend URL: $FRONTEND_URL"
-else
-  echo "Tip: set FRONTEND_URL in .env (from terraform output frontend_url)."
-fi
+
+echo "Tip: run terraform output frontend_url to get the frontend URL."
 
 echo "Deploy complete."

@@ -1,20 +1,32 @@
-"""Shared auth helpers for API proxy Lambdas."""
+"""Shared helpers for API proxy Lambdas."""
 
 from __future__ import annotations
 
 import json
 import os
+import secrets as py_secrets
 import time
 from typing import Any
 
 import jwt
 
-from cors import cors_headers
 from secrets_module import get_auth_secrets
+
 
 JWT_ALGORITHM = "HS256"
 JWT_SUBJECT = "demo"
 JWT_TTL_SECONDS = 86_400
+
+
+def cors_headers() -> dict[str, str]:
+    origin = os.environ.get("CORS_ALLOWED_ORIGIN")
+    if not origin:
+        return {}
+    return {
+        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Vary": "Origin",
+    }
 
 
 def _json_headers() -> dict[str, str]:
@@ -40,7 +52,6 @@ def login_response(body: str) -> dict[str, Any]:
         return _unauthorized()
 
     secrets = get_auth_secrets()
-    import secrets as py_secrets
 
     if not py_secrets.compare_digest(password, secrets.demo_password):
         return _unauthorized()

@@ -39,14 +39,14 @@ ollama pull qwen2.5:3b
 
 Set `USE_LOCAL_LLM=true` in `.env` (the default in `.env.example`) to route agent calls to Ollama instead of Bedrock.
 
-Run in three terminals from the repo root:
+Run in two terminals from the repo root:
 
 ```bash
-# 1 — AgentCore entrypoint (validates deploy path)
+# 1 — AgentCore entrypoint (validates deploy path, not needed for local development)
 cd app/DebateAgent && uv run python main.py
 # or: AGENTCORE_SKIP_INSTALL=1 pnpm agentcore:dev
 
-# 2 — FastAPI SSE server for the React UI
+# 2 — FastAPI SSE server for the React UI for local development
 pnpm dev:api
 
 # 3 — React frontend (proxies /api to port 8000)
