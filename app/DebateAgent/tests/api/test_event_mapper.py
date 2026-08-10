@@ -1,3 +1,5 @@
+from langchain_core.messages import AIMessage
+
 from api.streaming.event_mapper import DebateEventMapper
 
 
@@ -44,7 +46,7 @@ def test_skips_turn_started_when_turn_messages_not_empty() -> None:
                 "input": {
                     "turn_red": 1,
                     "turn_green": 0,
-                    "turn_messages": [{"type": "tool", "content": "result"}],
+                    "turn_messages": [AIMessage(content="result")],
                 }
             },
         }
@@ -54,6 +56,16 @@ def test_skips_turn_started_when_turn_messages_not_empty() -> None:
 
 def test_maps_wikipedia_tool_events() -> None:
     mapper = DebateEventMapper(topic="Topic")
+    ai_with_tools = AIMessage(
+        content="",
+        tool_calls=[
+            {
+                "name": "wikipedia_search",
+                "args": {"query": "renewable energy"},
+                "id": "1",
+            }
+        ],
+    )
 
     started = mapper.map_langgraph_event(
         {
@@ -65,19 +77,7 @@ def test_maps_wikipedia_tool_events() -> None:
                     "turn_red": 1,
                     "turn_green": 0,
                     "active_speaker": "Red",
-                    "turn_messages": [
-                        {
-                            "type": "ai",
-                            "content": "",
-                            "tool_calls": [
-                                {
-                                    "name": "wikipedia_search",
-                                    "args": {"query": "renewable energy"},
-                                    "id": "1",
-                                }
-                            ],
-                        }
-                    ],
+                    "turn_messages": [ai_with_tools],
                 }
             },
         }
@@ -97,19 +97,7 @@ def test_maps_wikipedia_tool_events() -> None:
                     "turn_red": 1,
                     "turn_green": 0,
                     "active_speaker": "Red",
-                    "turn_messages": [
-                        {
-                            "type": "ai",
-                            "content": "",
-                            "tool_calls": [
-                                {
-                                    "name": "wikipedia_search",
-                                    "args": {"query": "renewable energy"},
-                                    "id": "1",
-                                }
-                            ],
-                        }
-                    ],
+                    "turn_messages": [ai_with_tools],
                 }
             },
         }
@@ -122,14 +110,13 @@ def test_maps_wikipedia_tool_events() -> None:
 
 def test_maps_wikipedia_tool_events_for_multiple_queries() -> None:
     mapper = DebateEventMapper(topic="Topic")
-    ai_with_tools = {
-        "type": "ai",
-        "content": "",
-        "tool_calls": [
+    ai_with_tools = AIMessage(
+        content="",
+        tool_calls=[
             {"name": "wikipedia_search", "args": {"query": "solar power"}, "id": "1"},
             {"name": "wikipedia_search", "args": {"query": "wind energy"}, "id": "2"},
         ],
-    }
+    )
 
     started = mapper.map_langgraph_event(
         {
