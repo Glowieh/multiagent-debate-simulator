@@ -28,7 +28,10 @@ def get_wikipedia_client() -> wikipediaapi.Wikipedia:
 
 @tool  # pyright: ignore[reportUnknownVariableType]
 def wikipedia_search(query: str) -> str:
-    """Search Wikipedia for factual information about a topic."""
+    """Look up a Wikipedia page and return its title plus lead summary.
+
+    The summary may be truncated if it exceeds the character limit.
+    """
     timeout = get_settings().wikipedia_request_timeout_seconds
     try:
         future = _wiki_executor.submit(_search_wikipedia, query)
@@ -50,9 +53,13 @@ def _search_wikipedia(query: str) -> str:
     if not page.exists():
         return f"No Wikipedia page found for '{query}'."
     summary = page.summary
-    if len(summary) > MAX_SUMMARY_CHARS:
+    truncated = len(summary) > MAX_SUMMARY_CHARS
+    if truncated:
         summary = summary[:MAX_SUMMARY_CHARS].rsplit(" ", 1)[0] + "…"
-    return f"Title: {page.title}\n\n{summary}"
+    result = f"Title: {page.title}\n\nSummary:\n{summary}"
+    if truncated:
+        result += f"\n\n[Summary truncated to {MAX_SUMMARY_CHARS} characters.]"
+    return result
 
 
 WIKIPEDIA_TOOLS = [wikipedia_search]

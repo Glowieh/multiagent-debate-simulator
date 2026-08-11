@@ -30,8 +30,10 @@ def test_wikipedia_search_returns_summary(monkeypatch: pytest.MonkeyPatch) -> No
 
     result = wikipedia_search.invoke({"query": "renewable energy"})  # pyright: ignore[reportUnknownMemberType]
 
-    assert "Renewable energy" in result
+    assert "Title: Renewable energy" in result
+    assert "Summary:" in result
     assert "natural sources" in result
+    assert "truncated" not in result
     client.search.assert_called_once_with("renewable energy", limit=1)
 
 
@@ -69,8 +71,10 @@ def test_wikipedia_search_truncates_long_summary(
 
     result = wikipedia_search.invoke({"query": "long article"})  # pyright: ignore[reportUnknownMemberType]
 
-    assert len(result) < len(page.summary) + 20
-    assert result.endswith("…")
+    assert "Title: Long article" in result
+    assert "Summary:" in result
+    assert "…" in result
+    assert f"[Summary truncated to {wikipedia_module.MAX_SUMMARY_CHARS} characters.]" in result
 
 
 def test_wikipedia_search_handles_rate_limit(monkeypatch: pytest.MonkeyPatch) -> None:
