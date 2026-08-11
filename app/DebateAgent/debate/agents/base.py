@@ -7,9 +7,6 @@ from langchain_core.messages import (
     HumanMessage,
     SystemMessage,
 )
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import Runnable
 
 from debate.tools.wikipedia import WIKIPEDIA_TOOLS
 from model.load import load_model
@@ -18,37 +15,6 @@ from model.load import load_model
 class BaseAgent(ABC):
     name: str
     system_prompt: str
-    human_template: str = "Topic: {topic}\n\nPrior debate:\n{context}\n\nYour response:"
-
-    @staticmethod
-    def _build_chain(
-        system_prompt: str, human_template: str
-    ) -> Runnable[dict[str, str | int], str]:
-        prompt = ChatPromptTemplate.from_messages(  # pyright: ignore[reportUnknownMemberType]
-            [
-                ("system", system_prompt),
-                ("human", human_template),
-            ]
-        )
-        return prompt | load_model() | StrOutputParser()  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
-
-    def _human_templates(self) -> dict[str, str]:
-        return {"default": self.human_template}
-
-    def _init_chains(self) -> dict[str, Runnable[dict[str, str | int], str]]:
-        return {
-            name: type(self)._build_chain(self.system_prompt, template)
-            for name, template in self._human_templates().items()
-        }
-
-    def __init__(self) -> None:
-        self._chains = self._init_chains()
-
-    def respond(self, topic: str, context: str, turn: int = 0) -> str:
-        result = self._chains["default"].invoke(
-            {"topic": topic, "context": context, "turn": turn}
-        )
-        return str(result)
 
 
 class DebaterAgent(BaseAgent):
@@ -89,24 +55,12 @@ class DebaterAgent(BaseAgent):
         "Do not call wikipedia_search; argue from the transcript."
     )
 
-    def __init__(self) -> None:
-        # Skips BaseAgent.__init__: debaters use invoke_turn(), not _chains.
-        return
-
-    def _human_templates(self) -> dict[str, str]:
-        return {
-            "opening": self.opening_human_template,
-            "rebuttal": self.rebuttal_human_template,
-        }
-
-    def _select_human_template(self, turn: int, *, is_debate_opening: bool) -> str:
+    def _select_human_template(self, *, is_debate_opening: bool) -> str:
         if is_debate_opening:
             return self.opening_human_template
         return self.rebuttal_human_template
 
-    def _wikipedia_instruction(
-        self, turn: int, wikipedia_turn: int | None
-    ) -> str:
+    def _wikipedia_instruction(self, turn: int, wikipedia_turn: int | None) -> str:
         if wikipedia_turn is not None:
             if wikipedia_turn < turn:
                 return self._wikipedia_exhausted_instruction
@@ -126,9 +80,7 @@ class DebaterAgent(BaseAgent):
         is_debate_opening: bool,
         wikipedia_turn: int | None = None,
     ) -> list[BaseMessage]:
-        template = self._select_human_template(
-            turn, is_debate_opening=is_debate_opening
-        )
+        template = self._select_human_template(is_debate_opening=is_debate_opening)
         human_content = template.format(
             topic=topic,
             context=context,
@@ -162,13 +114,16 @@ class DebaterAgent(BaseAgent):
     ) -> list[BaseMessage]:
         if any(isinstance(message, SystemMessage) for message in messages):
             return messages
-        return self.build_turn_messages(
-            topic,
-            context,
-            turn,
-            is_debate_opening=is_debate_opening,
-            wikipedia_turn=wikipedia_turn,
-        ) + messages
+        return (
+            self.build_turn_messages(
+                topic,
+                context,
+                turn,
+                is_debate_opening=is_debate_opening,
+                wikipedia_turn=wikipedia_turn,
+            )
+            + messages
+        )
 
     def invoke_turn(
         self,
@@ -183,10 +138,7 @@ class DebaterAgent(BaseAgent):
         force_final: bool = False,
     ) -> tuple[list[BaseMessage], AIMessage]:
         model = load_model()
-        if (
-            not force_final
-            and (wikipedia_turn is None or wikipedia_turn == turn)
-        ):
+        if not force_final and (wikipedia_turn is None or wikipedia_turn == turn):
             model = model.bind_tools(WIKIPEDIA_TOOLS)  # pyright: ignore[reportUnknownMemberType]
         if first_call:
             messages = self.build_turn_messages(
@@ -210,8 +162,7 @@ class DebaterAgent(BaseAgent):
             messages = messages + [
                 HumanMessage(
                     content=(
-                        "Provide your final 3-paragraph reply now. "
-                        "Do not call tools."
+                        "Provide your final 3-paragraph reply now. Do not call tools."
                     )
                 )
             ]
@@ -235,10 +186,6 @@ class SummarizerAgent(BaseAgent):
         "presented stronger arguments, with 2–3 sentences of justification"
     )
 
-    def __init__(self) -> None:
-        # Skips BaseAgent.__init__: uses invoke_summary() + load_model().
-        return
-
     def invoke_summary(self, topic: str, context: str) -> str:
         messages = [
             SystemMessage(content=self.system_prompt),
@@ -251,6 +198,3 @@ class SummarizerAgent(BaseAgent):
         if isinstance(content, str):
             return content
         return str(content)
-
-    def respond(self, topic: str, context: str, turn: int = 0) -> str:
-        return self.invoke_summary(topic, context)
