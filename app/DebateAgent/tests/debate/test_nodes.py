@@ -9,7 +9,7 @@ from debate.nodes.debater_green import (
     debater_green_agent_node,
 )
 from debate.nodes.debater_red import debater_red_agent_node, debater_red_finish_node
-from debate.nodes.message_utils import final_turn_content, message_text
+from debate.nodes.message_utils import final_text_from_message, final_turn_content
 from debate.nodes.summarizer import summarizer_node
 from debate.state import DebateState
 
@@ -66,7 +66,7 @@ def test_debater_red_agent_node_seeds_turn_messages(
     assert len(turn_messages) == 1
     message = turn_messages[0]
     assert isinstance(message, AIMessage)
-    assert message_text(message) == "agent response"
+    assert final_text_from_message(message) == "agent response"
     assert red.calls == [
         {
             "turn_messages": [],
@@ -108,7 +108,7 @@ def test_debater_red_finish_node_commits_message_and_clears_turn_state(
     message = messages[0]
     assert isinstance(message, AIMessage)
     assert message.name == "Red"
-    assert message_text(message) == "final turn text"
+    assert final_text_from_message(message) == "final turn text"
 
 
 def test_debater_red_finish_node_uses_last_non_empty_ai_message() -> None:
@@ -129,7 +129,7 @@ def test_debater_red_finish_node_uses_last_non_empty_ai_message() -> None:
 
     messages = update.get("messages")
     assert messages is not None
-    assert message_text(messages[0]) == "forced final reply"
+    assert final_text_from_message(messages[0]) == "forced final reply"
 
 
 def test_final_turn_content_walks_back_for_non_empty_ai_message() -> None:

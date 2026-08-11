@@ -6,16 +6,7 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, System
 from debate.agents.debater_green import DebaterGreen
 from debate.agents.debater_red import DebaterRed
 from debate.agents.summarizer import Summarizer
-from debate.nodes.message_utils import message_text
-
-
-class RecordingChain:
-    def __init__(self) -> None:
-        self.last_input: dict[str, Any] | None = None
-
-    def invoke(self, inputs: dict[str, Any]) -> str:
-        self.last_input = inputs
-        return "recorded response"
+from debate.nodes.message_utils import final_text_from_message
 
 
 class RecordingToolModel:
@@ -34,33 +25,6 @@ class RecordingToolModel:
         response = self.responses[min(self._call_index, len(self.responses) - 1)]
         self._call_index += 1
         return response
-
-
-@pytest.fixture
-def recording_chains(
-    monkeypatch: pytest.MonkeyPatch,
-) -> tuple[RecordingChain, RecordingChain]:
-    opening = RecordingChain()
-    rebuttal = RecordingChain()
-
-    def fake_build_chain(system_prompt: str, human_template: str) -> RecordingChain:
-        if "opening statement" in human_template:
-            return opening
-        return rebuttal
-
-    monkeypatch.setattr("debate.agents.base.BaseAgent._build_chain", fake_build_chain)
-    return opening, rebuttal
-
-
-@pytest.fixture
-def recording_default_chain(monkeypatch: pytest.MonkeyPatch) -> RecordingChain:
-    default = RecordingChain()
-
-    def fake_build_chain(system_prompt: str, human_template: str) -> RecordingChain:
-        return default
-
-    monkeypatch.setattr("debate.agents.base.BaseAgent._build_chain", fake_build_chain)
-    return default
 
 
 @pytest.fixture
@@ -83,7 +47,7 @@ def test_debater_red_build_turn_messages_uses_opening_template() -> None:
     assert len(messages) == 2
     assert isinstance(messages[0], SystemMessage)
     assert isinstance(messages[1], HumanMessage)
-    assert "opening statement" in message_text(messages[1])
+    assert "opening statement" in final_text_from_message(messages[1])
 
 
 def test_debater_red_build_turn_messages_appends_wikipedia_turn_one() -> None:
@@ -92,9 +56,7 @@ def test_debater_red_build_turn_messages_appends_wikipedia_turn_one() -> None:
         "Topic", "Context", turn=1, is_debate_opening=True
     )
 
-    assert "must call wikipedia_search on either this turn" in message_text(
-        messages[1]
-    )
+    assert "must call wikipedia_search on either this turn" in final_text_from_message(messages[1])
 
 
 def test_debater_red_build_turn_messages_appends_wikipedia_turn_two_must_use() -> None:
@@ -103,7 +65,7 @@ def test_debater_red_build_turn_messages_appends_wikipedia_turn_two_must_use() -
         "Topic", "Context", turn=2, is_debate_opening=False
     )
 
-    assert "You must call wikipedia_search this turn" in message_text(messages[1])
+    assert "You must call wikipedia_search this turn" in final_text_from_message(messages[1])
 
 
 def test_debater_red_build_turn_messages_appends_wikipedia_exhausted() -> None:
@@ -112,7 +74,7 @@ def test_debater_red_build_turn_messages_appends_wikipedia_exhausted() -> None:
         "Topic", "Context", turn=3, is_debate_opening=False, wikipedia_turn=1
     )
 
-    assert "already used your Wikipedia lookup" in message_text(messages[1])
+    assert "already used your Wikipedia lookup" in final_text_from_message(messages[1])
 
 
 def test_debater_red_build_turn_messages_uses_rebuttal_on_turn_three() -> None:
@@ -121,8 +83,8 @@ def test_debater_red_build_turn_messages_uses_rebuttal_on_turn_three() -> None:
         "Topic", "Context", turn=3, is_debate_opening=False, wikipedia_turn=3
     )
 
-    assert "Respond directly to your opponent" in message_text(messages[1])
-    assert "already used your Wikipedia lookup" not in message_text(messages[1])
+    assert "Respond directly to your opponent" in final_text_from_message(messages[1])
+    assert "already used your Wikipedia lookup" not in final_text_from_message(messages[1])
 
 
 def test_invoke_turn_returns_ai_message(
@@ -139,7 +101,7 @@ def test_invoke_turn_returns_ai_message(
     )
 
     assert isinstance(response, AIMessage)
-    assert message_text(response) == "tool-aware response"
+    assert final_text_from_message(response) == "tool-aware response"
     assert recording_tool_model.bind_tools_called is True
     assert len(recording_tool_model.invoke_calls) == 1
     assert len(turn_update) == 3
@@ -213,9 +175,9 @@ def test_invoke_turn_prepends_system_prompt_after_tool_on_reentry(
 
     sent = recording_tool_model.invoke_calls[0]
     assert isinstance(sent[0], SystemMessage)
-    assert agent.system_prompt in message_text(sent[0])
+    assert agent.system_prompt in final_text_from_message(sent[0])
     assert isinstance(sent[1], HumanMessage)
-    assert "Respond directly to your opponent" in message_text(sent[1])
+    assert "Respond directly to your opponent" in final_text_from_message(sent[1])
     assert sent[2:] == prior
 
 
@@ -244,7 +206,7 @@ def test_invoke_turn_force_final_skips_tools_and_appends_instruction(
 
     assert recording_tool_model.bind_tools_called is False
     sent = recording_tool_model.invoke_calls[0]
-    assert "Provide your final 3-paragraph reply now" in message_text(sent[-1])
+    assert "Provide your final 3-paragraph reply now" in final_text_from_message(sent[-1])
 
 
 def test_summarizer_invoke_summary_uses_direct_model_invoke(
@@ -256,14 +218,4 @@ def test_summarizer_invoke_summary_uses_direct_model_invoke(
     assert result == "tool-aware response"
     assert len(recording_tool_model.invoke_calls) == 1
     assert isinstance(recording_tool_model.invoke_calls[0][0], SystemMessage)
-    assert "Topic" in message_text(recording_tool_model.invoke_calls[0][1])
-
-
-def test_summarizer_respond_delegates_to_invoke_summary(
-    recording_tool_model: RecordingToolModel,
-) -> None:
-    agent = Summarizer()
-    result = agent.respond("Topic", "Transcript")
-
-    assert result == "tool-aware response"
-    assert len(recording_tool_model.invoke_calls) == 1
+    assert "Topic" in final_text_from_message(recording_tool_model.invoke_calls[0][1])
