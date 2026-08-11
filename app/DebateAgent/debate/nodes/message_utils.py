@@ -15,10 +15,6 @@ def extract_query_from_tool_call(tool_call: Mapping[str, Any]) -> str:
     return ""
 
 
-def message_text(message: BaseMessage) -> str:
-    return final_text_from_message(message)
-
-
 def final_text_from_message(message: BaseMessage) -> str:
     content = cast(object, getattr(message, "content", ""))
     if isinstance(content, str):
