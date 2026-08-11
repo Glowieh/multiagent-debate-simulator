@@ -4,7 +4,6 @@ Message ``name`` fields use ``"Red"``, ``"Green"``, ``"Summarizer"``.
 Stream events use lowercase ``"summarizer"`` to match the frontend Speaker type.
 """
 
-from collections.abc import Mapping
 from typing import Any, Literal, cast
 
 from langchain_core.messages import AIMessage
@@ -43,20 +42,6 @@ def _speaker_for_node(node: str) -> Speaker | None:
     return None
 
 
-def _debater_agent_node(
-    node: str,
-) -> Literal["debater_red_agent", "debater_green_agent"] | None:
-    if node == "debater_red_agent":
-        return "debater_red_agent"
-    if node == "debater_green_agent":
-        return "debater_green_agent"
-    return None
-
-
-def _extract_chunk_content(chunk: object) -> str:
-    return extract_chunk_content(chunk)
-
-
 def _extract_message_content(output: object) -> str:
     if output is None:
         return ""
@@ -69,8 +54,8 @@ def _extract_message_content(output: object) -> str:
         messages = raw_messages
     if isinstance(messages, list) and messages:
         message_list = cast(list[object], messages)
-        return _extract_chunk_content(message_list[-1])
-    return _extract_chunk_content(cast(object, messages))
+        return extract_chunk_content(message_list[-1])
+    return extract_chunk_content(cast(object, messages))
 
 
 def _state_from_data(data: dict[str, Any]) -> dict[str, Any]:
@@ -81,35 +66,19 @@ def _state_from_data(data: dict[str, Any]) -> dict[str, Any]:
     return {}
 
 
-def _extract_query_from_tool_call(tool_call: Mapping[str, Any]) -> str:
-    return extract_query_from_tool_call(tool_call)
-
-
 def _extract_wikipedia_queries(state: dict[str, Any]) -> list[str]:
     turn_messages = state.get("turn_messages", [])
-    if isinstance(turn_messages, list):
-        message_list = cast(list[object], turn_messages)
-        for message in reversed(message_list):
-            if isinstance(message, AIMessage) and message.tool_calls:
-                queries = [
-                    _extract_query_from_tool_call(tool_call)
-                    for tool_call in message.tool_calls
-                ]
-                if queries:
-                    return queries
-            if isinstance(message, dict):
-                message_dict = cast(dict[str, Any], message)
-                tool_calls = message_dict.get("tool_calls")
-                if tool_calls and isinstance(tool_calls, list):
-                    tool_call_list = cast(list[object], tool_calls)
-                    queries = [
-                        _extract_query_from_tool_call(
-                            cast(Mapping[str, Any], tool_call)
-                        )
-                        for tool_call in tool_call_list
-                    ]
-                    if queries:
-                        return queries
+    if not isinstance(turn_messages, list):
+        return [""]
+    message_list = cast(list[object], turn_messages)
+    for message in reversed(message_list):
+        if isinstance(message, AIMessage) and message.tool_calls:
+            queries = [
+                extract_query_from_tool_call(tool_call)
+                for tool_call in message.tool_calls
+            ]
+            if queries:
+                return queries
     return [""]
 
 
@@ -145,7 +114,7 @@ class DebateEventMapper:
             if stream_speaker is None:
                 return results
             chunk = data.get("chunk")
-            content = _extract_chunk_content(chunk)
+            content = extract_chunk_content(chunk)
             if content:
                 results.append(
                     MessageChunkEvent(speaker=stream_speaker, content=content)
@@ -158,10 +127,7 @@ class DebateEventMapper:
         if name not in TRACKED_NODES:
             return results
 
-        node = name
-        agent_node = _debater_agent_node(node)
-
-        if kind == "on_chain_start" and agent_node is not None:
+        if kind == "on_chain_start" and name in DEBATER_AGENT_NODES:
             state = _state_from_data(data)
             turn_messages = state.get("turn_messages", [])
             if turn_messages:
@@ -169,20 +135,20 @@ class DebateEventMapper:
             if not self.debate_started_emitted:
                 self.debate_started_emitted = True
                 results.append(DebateStartedEvent(topic=self.topic))
-            turn_key = "turn_red" if agent_node == "debater_red_agent" else "turn_green"
+            turn_key = "turn_red" if name == "debater_red_agent" else "turn_green"
             turn = int(state.get(turn_key, 0)) + 1
-            turn_key_tuple = (agent_node, turn)
+            turn_key_tuple = (name, turn)
             if turn_key_tuple in self.emitted_turn_starts:
                 return results
             self.emitted_turn_starts.add(turn_key_tuple)
             speaker: Literal["Red", "Green"] = (
-                "Red" if agent_node == "debater_red_agent" else "Green"
+                "Red" if name == "debater_red_agent" else "Green"
             )
-            self.active_turns[agent_node] = turn
+            self.active_turns[name] = turn
             results.append(TurnStartedEvent(speaker=speaker, turn=turn))
 
-        if kind == "on_chain_end" and node in DEBATER_FINISH_NODES:
-            agent_node_key = node.replace("_finish", "_agent")
+        if kind == "on_chain_end" and name in DEBATER_FINISH_NODES:
+            agent_node_key = name.replace("_finish", "_agent")
             turn = self.active_turns.get(agent_node_key)
             if turn is None:
                 return results
@@ -190,10 +156,10 @@ class DebateEventMapper:
             completion_key = (agent_node_key, turn)
             if completion_key not in self.emitted_turn_completions:
                 self.emitted_turn_completions.add(completion_key)
-                speaker = "Red" if node == "debater_red_finish" else "Green"
+                speaker = "Red" if name == "debater_red_finish" else "Green"
                 results.append(TurnCompletedEvent(speaker=speaker, turn=turn))
 
-        if kind == "on_chain_end" and node == "summarizer":
+        if kind == "on_chain_end" and name == "summarizer":
             if not self.summary_emitted:
                 content = _extract_message_content(data.get("output"))
                 if content:
