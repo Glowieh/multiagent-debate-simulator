@@ -34,7 +34,3 @@ def get_settings() -> DebateSettings:
     if _settings is None:
         _settings = DebateSettings()
     return _settings
-
-
-def use_local_llm() -> bool:
-    return get_settings().use_local_llm
