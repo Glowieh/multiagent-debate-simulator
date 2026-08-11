@@ -4,7 +4,7 @@ from typing import Literal, cast
 from langchain_core.messages import AIMessage
 
 from debate.agents.base import DebaterAgent
-from debate.context import format_debate_transcript
+from debate.transcript import format_debate_transcript
 from debate.nodes.message_utils import (
     clear_turn_messages,
     final_text_from_message,

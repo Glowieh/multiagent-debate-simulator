@@ -1,7 +1,7 @@
 from langchain_core.messages import AIMessage
 
 from debate.agents import instances
-from debate.context import format_debate_transcript
+from debate.transcript import format_debate_transcript
 from debate.state import DebateState, DebateStateUpdate
 
 

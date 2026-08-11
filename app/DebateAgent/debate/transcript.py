@@ -10,7 +10,7 @@ def _speaker_label(message: BaseMessage) -> str | None:
     # Message names use PascalCase ("Summarizer"); stream events use "summarizer".
     if name in {"Red", "Green", "Summarizer"}:
         return name
-    return "Unknown"
+    return None
 
 
 def format_debate_transcript(messages: list[BaseMessage]) -> str:

@@ -1,7 +1,6 @@
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 
-from debate.context import format_debate_transcript
-from debate.initial_state import build_initial_state
+from debate.transcript import format_debate_transcript
 
 
 def test_format_debate_transcript_empty() -> None:
@@ -33,14 +32,11 @@ def test_format_debate_transcript_skips_unlabeled_messages() -> None:
     assert result == "Red (turn 1): Against argument one."
 
 
-def test_build_initial_state() -> None:
-    state = build_initial_state("Climate policy debate")
-    assert state["topic"] == "Climate policy debate"
-    assert state["messages"] == []
-    assert state["turn_red"] == 0
-    assert state["turn_green"] == 0
-    assert state["turn_messages"] == []
-    assert state["active_speaker"] is None
-    assert state["tool_loop_count"] == 0
-    assert state["wikipedia_turn_red"] is None
-    assert state["wikipedia_turn_green"] is None
+def test_format_debate_transcript_skips_unknown_speaker_names() -> None:
+    messages: list[BaseMessage] = [
+        AIMessage(content="Orphan tool reply.", name="tool"),
+        AIMessage(content="Against argument one.", name="Red"),
+        AIMessage(content="Nameless AI."),
+    ]
+    result = format_debate_transcript(messages)
+    assert result == "Red (turn 1): Against argument one."
