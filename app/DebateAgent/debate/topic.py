@@ -18,8 +18,6 @@ def normalize_topic(raw: object) -> str:
         raise TopicValidationError("Topic cannot be empty")
 
     if len(topic) > MAX_TOPIC_LENGTH:
-        raise TopicValidationError(
-            f"Topic cannot exceed {MAX_TOPIC_LENGTH} characters"
-        )
+        raise TopicValidationError(f"Topic cannot exceed {MAX_TOPIC_LENGTH} characters")
 
     return topic

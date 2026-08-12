@@ -74,7 +74,10 @@ def test_wikipedia_search_truncates_long_summary(
     assert "Title: Long article" in result
     assert "Summary:" in result
     assert "…" in result
-    assert f"[Summary truncated to {wikipedia_module.MAX_SUMMARY_CHARS} characters.]" in result
+    assert (
+        f"[Summary truncated to {wikipedia_module.MAX_SUMMARY_CHARS} characters.]"
+        in result
+    )
 
 
 def test_wikipedia_search_handles_rate_limit(monkeypatch: pytest.MonkeyPatch) -> None:

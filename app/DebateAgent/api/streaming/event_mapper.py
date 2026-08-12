@@ -98,9 +98,7 @@ class DebateEventMapper:
         name = str(event.get("name", ""))
         metadata_obj = event.get("metadata", {})
         metadata: dict[str, Any] = (
-            cast(dict[str, Any], metadata_obj)
-            if isinstance(metadata_obj, dict)
-            else {}
+            cast(dict[str, Any], metadata_obj) if isinstance(metadata_obj, dict) else {}
         )
         data_obj = event.get("data", {})
         data: dict[str, Any] = (
@@ -182,15 +180,11 @@ class DebateEventMapper:
         if kind == "on_chain_start":
             self.pending_tool_queries[speaker] = queries
             for query in queries:
-                results.append(
-                    ToolCallStartedEvent(speaker=speaker, query=query)
-                )
+                results.append(ToolCallStartedEvent(speaker=speaker, query=query))
         elif kind == "on_chain_end":
             completed_queries = self.pending_tool_queries.pop(speaker, queries)
             for query in completed_queries:
-                results.append(
-                    ToolCallCompletedEvent(speaker=speaker, query=query)
-                )
+                results.append(ToolCallCompletedEvent(speaker=speaker, query=query))
 
         return results
 
