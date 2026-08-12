@@ -10,11 +10,10 @@ from debate.nodes.message_utils import final_text_from_message
 
 
 class RecordingToolModel:
-    def __init__(self, responses: list[AIMessage] | None = None) -> None:
-        self.responses = responses or [AIMessage(content="tool-aware response")]
+    def __init__(self) -> None:
         self.invoke_calls: list[list[Any]] = []
         self.bind_tools_called = False
-        self._call_index = 0
+        self._response = AIMessage(content="tool-aware response")
 
     def bind_tools(self, tools: list[Any]) -> "RecordingToolModel":
         self.bind_tools_called = True
@@ -22,9 +21,7 @@ class RecordingToolModel:
 
     def invoke(self, messages: list[Any]) -> AIMessage:
         self.invoke_calls.append(messages)
-        response = self.responses[min(self._call_index, len(self.responses) - 1)]
-        self._call_index += 1
-        return response
+        return self._response
 
 
 @pytest.fixture
@@ -47,16 +44,9 @@ def test_debater_red_build_turn_messages_uses_opening_template() -> None:
     assert len(messages) == 2
     assert isinstance(messages[0], SystemMessage)
     assert isinstance(messages[1], HumanMessage)
-    assert "opening statement" in final_text_from_message(messages[1])
-
-
-def test_debater_red_build_turn_messages_appends_wikipedia_turn_one() -> None:
-    agent = DebaterRed()
-    messages = agent.build_turn_messages(
-        "Topic", "Context", turn=1, is_debate_opening=True
-    )
-
-    assert "must call wikipedia_search on either this turn" in final_text_from_message(messages[1])
+    human_text = final_text_from_message(messages[1])
+    assert "opening statement" in human_text
+    assert "must call wikipedia_search on either this turn" in human_text
 
 
 def test_debater_red_build_turn_messages_appends_wikipedia_turn_two_must_use() -> None:
@@ -75,6 +65,17 @@ def test_debater_red_build_turn_messages_appends_wikipedia_exhausted() -> None:
     )
 
     assert "already used your Wikipedia lookup" in final_text_from_message(messages[1])
+
+
+def test_debater_red_build_turn_messages_appends_wikipedia_missed_on_turn_three() -> None:
+    agent = DebaterRed()
+    messages = agent.build_turn_messages(
+        "Topic", "Context", turn=3, is_debate_opening=False
+    )
+
+    assert "You should have used Wikipedia on turn 1 or 2" in final_text_from_message(
+        messages[1]
+    )
 
 
 def test_debater_red_build_turn_messages_uses_rebuttal_on_turn_three() -> None:
