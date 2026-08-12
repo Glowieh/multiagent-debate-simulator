@@ -19,9 +19,7 @@ class DebateSettings(BaseSettings):
     max_tool_loops: int = Field(default=3, ge=1)
     llm_request_timeout_seconds: float | None = Field(default=120.0, ge=0)
     wikipedia_request_timeout_seconds: float = Field(default=10.0, ge=0)
-    wikipedia_user_agent: str = (
-        "MultiAgentDebateBot/1.0 (https://github.com/Glowieh/multiagent-debate-simulator)"
-    )
+    wikipedia_user_agent: str = "MultiAgentDebateBot/1.0 (https://github.com/Glowieh/multiagent-debate-simulator)"
     wikipedia_max_retries: int = Field(default=3, ge=0)
     wikipedia_retry_wait: float = Field(default=1.0, ge=0)
 

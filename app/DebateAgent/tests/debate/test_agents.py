@@ -55,7 +55,9 @@ def test_debater_red_build_turn_messages_appends_wikipedia_turn_two_must_use() -
         "Topic", "Context", turn=2, is_debate_opening=False
     )
 
-    assert "You must call wikipedia_search this turn" in final_text_from_message(messages[1])
+    assert "You must call wikipedia_search this turn" in final_text_from_message(
+        messages[1]
+    )
 
 
 def test_debater_red_build_turn_messages_appends_wikipedia_exhausted() -> None:
@@ -67,7 +69,9 @@ def test_debater_red_build_turn_messages_appends_wikipedia_exhausted() -> None:
     assert "already used your Wikipedia lookup" in final_text_from_message(messages[1])
 
 
-def test_debater_red_build_turn_messages_appends_wikipedia_missed_on_turn_three() -> None:
+def test_debater_red_build_turn_messages_appends_wikipedia_missed_on_turn_three() -> (
+    None
+):
     agent = DebaterRed()
     messages = agent.build_turn_messages(
         "Topic", "Context", turn=3, is_debate_opening=False
@@ -85,7 +89,9 @@ def test_debater_red_build_turn_messages_uses_rebuttal_on_turn_three() -> None:
     )
 
     assert "Respond directly to your opponent" in final_text_from_message(messages[1])
-    assert "already used your Wikipedia lookup" not in final_text_from_message(messages[1])
+    assert "already used your Wikipedia lookup" not in final_text_from_message(
+        messages[1]
+    )
 
 
 def test_invoke_turn_returns_ai_message(
@@ -207,7 +213,9 @@ def test_invoke_turn_force_final_skips_tools_and_appends_instruction(
 
     assert recording_tool_model.bind_tools_called is False
     sent = recording_tool_model.invoke_calls[0]
-    assert "Provide your final 3-paragraph reply now" in final_text_from_message(sent[-1])
+    assert "Provide your final 3-paragraph reply now" in final_text_from_message(
+        sent[-1]
+    )
 
 
 def test_summarizer_invoke_summary_uses_direct_model_invoke(

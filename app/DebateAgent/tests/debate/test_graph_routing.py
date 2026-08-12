@@ -103,14 +103,8 @@ def test_route_after_agent_allows_wikipedia_on_chosen_turn() -> None:
 
 
 def test_route_after_tool_returns_active_speaker_agent() -> None:
-    assert (
-        _route_after_tool(_state(active_speaker="Red"))
-        == "debater_red_agent"
-    )
-    assert (
-        _route_after_tool(_state(active_speaker="Green"))
-        == "debater_green_agent"
-    )
+    assert _route_after_tool(_state(active_speaker="Red")) == "debater_red_agent"
+    assert _route_after_tool(_state(active_speaker="Green")) == "debater_green_agent"
 
 
 def test_route_after_red_finish_alternates_to_green() -> None:
